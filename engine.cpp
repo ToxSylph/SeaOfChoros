@@ -1,5 +1,29 @@
 #include "engine.h"
 
+bool GetProjectilePath(std::vector<FVector>& v, FVector& Vel, FVector& Pos, float Gravity, int count, UWorld* world)
+{
+	float interval = 0.033f;
+	for (unsigned int i = 0; i < count; ++i)
+	{
+		v.push_back(Pos);
+		FVector move;
+		move.X = (Vel.X) * interval;
+		move.Y = (Vel.Y) * interval;
+		float newZ = Vel.Z - (Gravity * interval);
+		move.Z = ((Vel.Z + newZ) * 0.5f) * interval;
+		Vel.Z = newZ;
+		FVector nextPos = Pos + move;
+		bool res = true;
+
+		FHitResult hit_result;
+		res = raytrace(world, Pos, nextPos, &hit_result);
+
+
+		Pos = nextPos;
+		if (res && hit_result.Distance > 1.f) return true;
+	}
+	return false;
+}
 
 #include <complex>
 void SolveQuartic(const std::complex<float> coefficients[5], std::complex<float> roots[4]) {
@@ -167,6 +191,36 @@ void render(ImDrawList* drawList)
 				break;
 			}
 		}
+		if (cfg->client.shipInfo)
+		{
+			auto ship = localPlayerActor->GetCurrentShip();
+			if (ship)
+			{
+				FVector velocity = ship->GetVelocity() / 100.f;
+				char buf[0xFF];
+				FVector2D pos{ 10.f, 45.f };
+				ImVec4 col{ 1.f,1.f,1.f,1.f };
+				auto speed = velocity.Size();
+				sprintf_s(buf, "Speed: %.0fm/s", speed);
+				pos.Y += 5.f;
+				RenderText(drawList, buf, pos, col, 20, false);
+				int holes = ship->GetHullDamage()->ActiveHullDamageZones.Count;
+				sprintf_s(buf, "Holes: %d", holes);
+				pos.Y += 20.f;
+				RenderText(drawList, buf, pos, col, 20, false);
+				int amount = 0;
+				auto water = ship->GetInternalWater();
+				if (water) amount = water->GetNormalizedWaterAmount() * 100.f;
+				sprintf_s(buf, "Water: %d%%", amount);
+				pos.Y += 20.f;
+				RenderText(drawList, buf, pos, col, 20, false);
+				pos.Y += 22.f;
+				float internal_water_percent = ship->GetInternalWater()->GetNormalizedWaterAmount();
+				drawList->AddLine({ pos.X - 1, pos.Y }, { pos.X + 100 + 1, pos.Y }, 0xFF000000, 6);
+				drawList->AddLine({ pos.X, pos.Y }, { pos.X + 100, pos.Y }, 0xFF00FF00, 4);
+				drawList->AddLine({ pos.X, pos.Y }, { pos.X + (100.f * internal_water_percent), pos.Y }, 0xFF0000FF, 4);
+			}
+		}
 	}
 	if (cfg->esp.enable)
 	{
@@ -189,6 +243,49 @@ void render(ImDrawList* drawList)
 					auto len = island->LocalisedName->multi(buf, 0x50);
 					sprintf_s(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
 					RenderText(drawList, buf, screen, cfg->esp.islands.color, (int)cfg->esp.islands.size + 10);
+				}
+			}
+		}
+	}
+	if (cfg->aim.enable)
+	{
+		if (cfg->aim.cannon.enable && attachObject && attachObject->isCannon())
+		{
+			auto cannon = reinterpret_cast<ACannon*>(attachObject);
+			float gravity_scale = cannon->ProjectileGravityScale;
+			int localsets = 0;
+			if (cfg->aim.cannon.drawPred)
+			{
+				float gravity = 981.f * gravity_scale;
+				float launchspeed = cannon->ProjectileSpeed;
+				FRotator angle = { cannon->ServerPitch, cannon->ServerYaw, 0.f };
+				FRotator comp_angle = attachObject->K2_GetActorRotation();
+				angle += comp_angle;
+				FVector vForward = UKismetMathLibrary::Conv_RotatorToVector(angle);
+				FVector pos = attachObject->K2_GetActorLocation();
+				pos.Z += 100;
+				pos = pos + (vForward * 150);
+				FVector vel = vForward * launchspeed;
+				if (localPlayerActor->GetCurrentShip())
+					vel = vel + localPlayerActor->GetCurrentShip()->GetVelocity();
+				std::vector<FVector> path;
+				int count = 250;
+				//bool hit = GetProjectilePath(path, vel, pos, gravity, count, world);
+				bool hit = GetProjectilePath(path, vel, pos, gravity, count, world);
+				FVector2D screen_pos_prev;
+				for (int i = 0; i < path.size(); i++)
+				{
+					FVector2D screen_pos;
+					bool is_on_screen = playerController->ProjectWorldLocationToScreen(path[i], screen_pos);
+					if (is_on_screen) {
+						if (hit && i == path.size() - 1)
+						{
+							drawList->AddCircle({ screen_pos.X, screen_pos.Y }, 7, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 1.f, 0.f, 1.f)), 9, 1);
+						}
+						else if (i >= 1)
+							drawList->AddLine({ screen_pos_prev.X, screen_pos_prev.Y }, { screen_pos.X, screen_pos.Y }, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 0.f, 1.f)), 1);
+						screen_pos_prev = screen_pos;
+					}
 				}
 			}
 		}
@@ -1045,7 +1142,7 @@ void render(ImDrawList* drawList)
 					{
 						LV = { 0.f,0.f,0.f };
 						TV = { 0.f,0.f,0.f };
-					}
+					} 
 				}
 				else
 				{
@@ -1053,7 +1150,11 @@ void render(ImDrawList* drawList)
 					TV = { 0.f,0.f,0.f };
 				}
 				const FVector RV = TV - LV;
-				const float BS = localWeapon->WeaponParameters.AmmoParams.Velocity;
+				float BS;
+				if (localWeapon)
+					BS = localWeapon->WeaponParameters.AmmoParams.Velocity;
+				else
+					BS = 1.f;
 				const FVector RL = myLocation - aimBest.location;
 				const float a = RV.Size() - BS * BS;
 				const float b = (RL * RV * 2.f).Sum();
@@ -1231,12 +1332,15 @@ void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, co
 	drawList->AddText(nullptr, 20.f, ImScreen, ImGui::GetColorU32(color), text);
 }
 
-void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, const ImVec4& color, const int fontSize = 10)
+void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, const ImVec4& color, const int fontSize, const bool centered)
 {
 	if (!text) return;
 	auto ImScreen = *reinterpret_cast<const ImVec2*>(&pos);
-	auto size = ImGui::CalcTextSize(text);
-	ImScreen.x -= size.x * 0.5f;
+	if (centered)
+	{
+		auto size = ImGui::CalcTextSize(text);
+		ImScreen.x -= size.x * 0.5f;
+	}
 
 	drawList->AddText(nullptr, (float)fontSize, ImVec2(ImScreen.x - 1.f, ImScreen.y - 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
 	drawList->AddText(nullptr, (float)fontSize, ImVec2(ImScreen.x + 1.f, ImScreen.y + 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);

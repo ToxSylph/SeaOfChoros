@@ -3,6 +3,7 @@
 #include "logger.h"
 #include "config.h"
 #include "cIcons.h"
+#include <vector>
 
 #include <d3d11.h>
 #include "ImGui/imgui_impl_win32.h"
@@ -26,7 +27,7 @@ bool checkGameVars();
 bool updateGameVars();
 void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, const ImVec4& color, const float dist, const bool outlined = false, const bool centered = true);
 void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, const ImVec4& color, const bool outlined = false, const bool centered = true);
-void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, const ImVec4& color, const int fontSize);
+void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, const ImVec4& color, const int fontSize = 10, const bool centered = true);
 void RenderText(ImDrawList* drawList, const char* text, const ImVec2& screen, const ImVec4& color, const float size, const bool outlined = false, const bool centered = true);
 void renderPin(ImDrawList* drawList, const ImVec2& pos, const ImVec4& color, const float radius);
 void Render2DBox(ImDrawList* drawList, const FVector2D& top, const FVector2D& bottom, const float height, const float width, const ImVec4& color);

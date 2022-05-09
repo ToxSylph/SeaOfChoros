@@ -262,6 +262,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderFloat("CH Thickness", &Config::cfg.client.crosshairThickness, 1.f, 50.f, "%.0f");
 					ImGui::ColorEdit4("CH Color", &Config::cfg.client.crosshairColor.x, 0);
 					ImGui::Combo("Crosshair Type", reinterpret_cast<int*>(&Config::cfg.client.crosshairType), crosshair, IM_ARRAYSIZE(crosshair));
+					ImGui::Checkbox("Ship Info", &Config::cfg.client.shipInfo);
 				}
 				ImGui::EndChild();
 				
@@ -444,7 +445,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Enable", &Config::cfg.aim.cannon.enable);
 					ImGui::SliderFloat("Pitch", &Config::cfg.aim.cannon.fPitch, 1.f, 100.f, "%.0f");
 					ImGui::SliderFloat("Yaw", &Config::cfg.aim.cannon.fYaw, 1.f, 100.f, "%.0f");
-					ImGui::SliderFloat("Smoothness", &Config::cfg.aim.cannon.smooth, 1.f, 100.f, "%.0f");
+					ImGui::Checkbox("Draw Trajectory", &Config::cfg.aim.cannon.drawPred);
 					ImGui::Checkbox("Instant Shot", &Config::cfg.aim.cannon.instant);
 					ImGui::Checkbox("Chain Shots", &Config::cfg.aim.cannon.chains);
 					ImGui::Checkbox("Players", &Config::cfg.aim.cannon.players);
