@@ -114,7 +114,6 @@ void run()
 	tslog::verbose("Starting main loop..\n");
 	while (g_Running)
 	{
-		update();
 		if (GetAsyncKeyState(VK_INSERT) & 1)
 		{
 			g_ShowMenu = !g_ShowMenu;
@@ -123,7 +122,7 @@ void run()
 		{
 			g_Running = false;
 		}
-		Sleep(1);
+		Sleep(20);
 	}
 	end();
 }
@@ -190,7 +189,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 	auto drawList = ImGui::GetCurrentWindow()->DrawList;
 
-	if (checkGameVars())
+	if (updateGameVars())
 	{
 		render(ImGui::GetCurrentWindow()->DrawList);
 	}
@@ -255,8 +254,14 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 				if (ImGui::BeginChild("Global Client", ImVec2(0.f, 0.f), false, 0))
 				{
+					const char* crosshair[] = { "None", "Circle", "Cross" };
 					ImGui::SliderFloat("FOV Value", &Config::cfg.client.fov, 60.f, 150.f, "%.0f");
-
+					ImGui::Checkbox("Show Oxygen Level", &Config::cfg.client.oxygen);
+					ImGui::Checkbox("CrossHair", &Config::cfg.client.crosshair);
+					ImGui::SliderFloat("CH Size", &Config::cfg.client.crosshairSize, 1.f, 50.f, "%.0f");
+					ImGui::SliderFloat("CH Thickness", &Config::cfg.client.crosshairThickness, 1.f, 50.f, "%.0f");
+					ImGui::ColorEdit4("CH Color", &Config::cfg.client.crosshairColor.x, 0);
+					ImGui::Combo("Crosshair Type", reinterpret_cast<int*>(&Config::cfg.client.crosshairType), crosshair, IM_ARRAYSIZE(crosshair));
 				}
 				ImGui::EndChild();
 				
@@ -365,6 +370,10 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderFloat("Distance", &Config::cfg.esp.items.renderDistance, 1.f, 500.f, "%.0f");
 					ImGui::ColorEdit4("Color", &Config::cfg.esp.items.color.x, 0);
 					ImGui::Checkbox("R key Toggle Names", &Config::cfg.esp.items.nameToggle);
+					ImGui::Checkbox("Animals", &Config::cfg.esp.items.animals);
+					ImGui::SliderFloat("An. Distance", &Config::cfg.esp.items.animalsRenderDistance, 1.f, 500.f, "%.0f");
+					ImGui::ColorEdit4("An. Color", &Config::cfg.esp.items.animalsColor.x, 0);
+
 
 				}
 				ImGui::EndChild();
@@ -402,7 +411,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				ImGui::Text("Global aim");
 				if (ImGui::BeginChild("Global", ImVec2(200.f, 50.f), false, 0))
 				{
-					ImGui::Checkbox("Enable", &Config::cfg.esp.enable);
+					ImGui::Checkbox("Enable", &Config::cfg.aim.enable);
 
 				}
 				ImGui::EndChild();
@@ -412,7 +421,17 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				ImGui::Text("Weapon");
 				if (ImGui::BeginChild("WeaponAim", ImVec2(0.f, 0.f), true, 0))
 				{
-					ImGui::Checkbox("Enable", &Config::cfg.esp.islands.enable);
+					ImGui::Checkbox("Enable", &Config::cfg.aim.weapon.enable);
+					ImGui::SliderFloat("Pitch", &Config::cfg.aim.weapon.fPitch, 1.f, 100.f, "%.0f");
+					ImGui::SliderFloat("Yaw", &Config::cfg.aim.weapon.fYaw, 1.f, 100.f, "%.0f");
+					ImGui::SliderFloat("Smoothness", &Config::cfg.aim.weapon.smooth, 1.f, 100.f, "%.0f");
+					ImGui::SliderFloat("Height", &Config::cfg.aim.weapon.height, 1.f, 100.f, "%.0f");
+					ImGui::Checkbox("Players", &Config::cfg.aim.weapon.players);
+					ImGui::Checkbox("Skeletons", &Config::cfg.aim.weapon.skeletons);
+					ImGui::Checkbox("Gunpowder", &Config::cfg.aim.weapon.kegs);
+					ImGui::Checkbox("Instant Shot", &Config::cfg.aim.weapon.trigger);
+					ImGui::Checkbox("Visible Only", &Config::cfg.aim.weapon.visibleOnly);
+					ImGui::Checkbox("Calc Ship Vel", &Config::cfg.aim.weapon.calcShipVel);
 
 				}
 				ImGui::EndChild();
@@ -422,7 +441,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				ImGui::Text("Cannon");
 				if (ImGui::BeginChild("CannonAim", ImVec2(0.f, 0.f), true, 0))
 				{
-					ImGui::Checkbox("Enable", &Config::cfg.esp.items.enable);
+					ImGui::Checkbox("Enable", &Config::cfg.aim.cannon.enable);
 
 				}
 				ImGui::EndChild();

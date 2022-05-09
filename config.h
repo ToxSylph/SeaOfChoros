@@ -6,10 +6,21 @@ class Config
 {
 public:
 	static inline struct Configuration {
+		enum class ECrosshairs : int {
+			ENone,
+			ECircle,
+			ECross
+		};
 		struct
 		{
 			bool enable = false;
 			float fov = 90.f;
+			bool oxygen = false;
+			bool crosshair = false;
+			float crosshairSize = 1.f;
+			float crosshairThickness = 1.f;
+			ImVec4 crosshairColor = { 1.f, 1.f, 1.f, 1.f };
+			ECrosshairs crosshairType = ECrosshairs::ENone;
 		}client;
 		struct
 		{
@@ -53,9 +64,6 @@ public:
 				bool vaults = false;
 				float vaultsRenderDistance = 100.f;
 				ImVec4 vaultsColor = { 1.f, 1.f, 1.f, 1.f };
-				bool animals = false;
-				float animalsRenderDistance = 100.f;
-				ImVec4 animalsColor = { 1.f, 1.f, 1.f, 1.f };
 				bool barrels = false;
 				float barrelsRenderDistance = 100.f;
 				ImVec4 barrelsColor = { 1.f, 1.f, 1.f, 1.f };
@@ -70,6 +78,9 @@ public:
 				ImVec4 color = { 1.f, 1.f, 1.f, 1.f };
 				bool nameToggle = false;
 				bool mermaids = false;
+				bool animals = false;
+				float animalsRenderDistance = 100.f;
+				ImVec4 animalsColor = { 1.f, 1.f, 1.f, 1.f };
 
 			}items;
 			struct 
@@ -92,6 +103,28 @@ public:
 				ImVec4 eventsColor = { 1.f, 1.f, 1.f, 1.f };
 			}others;
 		}esp;
+		struct
+		{
+			bool enable = false;
+			struct
+			{
+				bool enable = false;
+				float fPitch = 1.f;
+				float fYaw = 1.f;
+				float smooth = 1.f;
+				float height = 1.f;
+				bool players = false;
+				bool skeletons = false;
+				bool kegs = false;
+				bool trigger = false;
+				bool visibleOnly = false;
+				bool calcShipVel = false;
+			}weapon;
+			struct
+			{
+				bool enable = false;
+			}cannon;
+		}aim;
 		struct
 		{
 

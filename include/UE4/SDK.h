@@ -50,6 +50,19 @@ public:
 	uint32_t NumChunks = 0;
 };
 
+// @abrn
+struct FTextData
+{
+public:
+	wchar_t* Text; //0x0000 (0x08)
+};
+
+struct FText
+{
+public:
+	struct FTextData* TextData; //0x0000 (0x08)
+};
+
 class FString : public TArray<wchar_t>
 {
 public:
@@ -277,6 +290,11 @@ struct AShipInternalWater {
 		ProcessEvent(this, fn, &params);
 		return params;
 	}
+};
+
+struct AFauna {
+	char pad1[0x0808];
+	FText DisplayName; // 0x0808
 };
 
 // Class Engine.Actor
@@ -516,6 +534,30 @@ struct ACharacter : APawn {
 		return IsA(obj);
 	}
 
+	inline bool isAnimal() {
+		static auto obj = UObject::FindClass("Class AthenaAI.Fauna");
+		return IsA(obj);
+	}
+
+	bool IsDead() {
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.AthenaCharacter.IsDead");
+		bool isDead = true;
+		ProcessEvent(this, fn, &isDead);
+		return isDead;
+	}
+
+	bool IsInWater() {
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.AthenaCharacter.IsInWater");
+		bool isInWater = false;
+		ProcessEvent(this, fn, &isInWater);
+		return isInWater;
+	}
+
+	bool isWeapon() {
+		static auto obj = UObject::FindClass("Class Athena.ProjectileWeapon");
+		return IsA(obj);
+	}
+
 	AHullDamage* GetHullDamage() {
 		static auto fn = UObject::FindObject<UFunction>("Function Athena.Ship.GetHullDamage");
 		AHullDamage* params = nullptr;
@@ -528,6 +570,20 @@ struct ACharacter : APawn {
 		AShipInternalWater* params = nullptr;
 		ProcessEvent(this, fn, &params);
 		return params;
+	}
+
+	ACharacter* GetAttachParentActor() {
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.GetAttachParentActor");
+		ACharacter* ReturnValue;
+		ProcessEvent(this, fn, &ReturnValue);
+		return ReturnValue;
+	}
+
+	ACharacter* GetCurrentShip() {
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.AthenaCharacter.GetCurrentShip");
+		ACharacter* ReturnValue;
+		ProcessEvent(this, fn, &ReturnValue);
+		return ReturnValue;
 	}
 
 	FVector GetVelocity() {
@@ -1053,9 +1109,6 @@ struct APlayerController : AController {
 	void ClientAddTextureStreamingLoc(struct FVector InLoc, float Duration, bool bOverrideLocation); // Function Engine.PlayerController.ClientAddTextureStreamingLoc // Final|Net|NetReliableNative|Event|Public|HasDefaults|NetClient // @ game+0x2b23360
 	void ClearAudioListenerOverride(); // Function Engine.PlayerController.ClearAudioListenerOverride // Final|Native|Public|BlueprintCallable // @ game+0x2b23320
 	void Camera(struct FName NewMode); // Function Engine.PlayerController.Camera // Exec|Native|Public // @ game+0x2b23260
-	void AddYawInput(float Val); // Function Engine.PlayerController.AddYawInput // Native|Public|BlueprintCallable // @ game+0x2b22e30
-	void AddRollInput(float Val); // Function Engine.PlayerController.AddRollInput // Native|Public|BlueprintCallable // @ game+0x2b22b70
-	void AddPitchInput(float Val); // Function Engine.PlayerController.AddPitchInput // Native|Public|BlueprintCallable // @ game+0x2b22af0
 	void ActivateTouchInterface(struct UTouchInterface* NewTouchInterface); // Function Engine.PlayerController.ActivateTouchInterface // Native|Public|BlueprintCallable // @ game+0x2b22540
 };
 
@@ -1655,4 +1708,110 @@ public:
 
 		ProcessEvent(defaultObj, fn, &params);
 	}
+};
+
+enum class EMeleeWeaponMovementSpeed : uint8_t
+{
+	EMeleeWeaponMovementSpeed__Default = 0,
+	EMeleeWeaponMovementSpeed__SlightlySlowed = 1,
+	EMeleeWeaponMovementSpeed__Slowed = 2,
+	EMeleeWeaponMovementSpeed__EMeleeWeaponMovementSpeed_MAX = 3
+};
+
+struct UMeleeAttackDataAsset
+{
+	char pad[0x0238];
+	float                                              ClampYawRange;                                             // 0x0238(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+	float                                              ClampYawRate;                                              // 0x023C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+};
+
+struct UMeleeWeaponDataAsset
+{
+	char pad[0x0048];
+	class UMeleeAttackDataAsset* HeavyAttack; //0x0048
+	char pad2[0x0028];
+	EMeleeWeaponMovementSpeed BlockingMovementSpeed; //0x0078
+};
+
+struct AMeleeWeapon
+{
+	char pad[0x07C0];
+	struct UMeleeWeaponDataAsset* DataAsset; //0x07C0
+};
+
+struct FProjectileShotParams
+{
+	int                                                Seed;                                                     // 0x0000(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              ProjectileDistributionMaxAngle;                           // 0x0004(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	int                                                NumberOfProjectiles;                                      // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              ProjectileMaximumRange;                                   // 0x000C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              ProjectileDamage;                                         // 0x0010(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              ProjectileDamageMultiplierAtMaximumRange;                 // 0x0014(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+};
+
+struct FWeaponProjectileParams
+{
+	float                                              Damage;                                                   // 0x0000(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              DamageMultiplierAtMaximumRange;                           // 0x0004(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              LifeTime;                                                 // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              TrailFadeOutTime;                                         // 0x000C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	float                                              Velocity;                                                 // 0x0010(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+	char pad_78[0x94];
+};
+
+struct FProjectileWeaponParameters {
+	int AmmoClipSize; // 0x00(0x04)
+	int AmmoCostPerShot; // 0x04(0x04)
+	float EquipDuration; // 0x08(0x04)
+	float IntoAimingDuration; // 0x0c(0x04)
+	float RecoilDuration; // 0x10(0x04)
+	float ReloadDuration; // 0x14(0x04)
+	struct FProjectileShotParams HipFireProjectileShotParams; // 0x18(0x18)
+	struct FProjectileShotParams AimDownSightsProjectileShotParams; // 0x30(0x18)
+	int Seed; // 0x48(0x04)
+	float ProjectileDistributionMaxAngle; // 0x4c(0x04)
+	int NumberOfProjectiles; // 0x50(0x04)
+	float ProjectileMaximumRange; // 0x54(0x04)
+	float ProjectileDamage; // 0x58(0x04)
+	float ProjectileDamageMultiplierAtMaximumRange; // 0x5c(0x04)
+	struct UClass* DamagerType; // 0x60(0x08)
+	struct UClass* ProjectileId; // 0x68(0x08)
+	struct FWeaponProjectileParams AmmoParams; // 0x70(0xa8)
+	bool UsesScope; // 0x118(0x01)
+	char UnknownData_119[0x3]; // 0x119(0x03)
+	float ZoomedRecoilDurationIncrease; // 0x11c(0x04)
+	float SecondsUntilZoomStarts; // 0x120(0x04)
+	float SecondsUntilPostStarts; // 0x124(0x04)
+	float WeaponFiredAINoiseRange; // 0x128(0x04)
+	float MaximumRequestPositionDelta; // 0x12c(0x04)
+	float MaximumRequestAngleDelta; // 0x130(0x04)
+	float TimeoutTolerance; // 0x134(0x04)
+	float AimingMoveSpeedScalar; // 0x138(0x04)
+	char AimSensitivitySettingCategory; // 0x13c(0x01)
+	char UnknownData_13D[0x3]; // 0x13d(0x03)
+	float InAimFOV; // 0x140(0x04)
+	float BlendSpeed; // 0x144(0x04)
+	struct UWwiseEvent* DryFireSfx; // 0x148(0x08)
+	struct FName RumbleTag; // 0x160(0x08)
+	bool KnockbackEnabled; // 0x168(0x01)
+	char UnknownData_169[0x3]; // 0x169(0x03)
+	bool StunEnabled; // 0x1bc(0x01)
+	char UnknownData_1BD[0x3]; // 0x1bd(0x03)
+	float StunDuration; // 0x1c0(0x04)
+	struct FVector TargetingOffset; // 0x1c4(0x0c)
+};
+
+struct AProjectileWeapon {
+	char pad[0x7d0]; // 0
+	FProjectileWeaponParameters WeaponParameters; // 0x7d0
+
+	bool CanFire()
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.ProjectileWeapon.CanFire");
+		bool canfire;
+		ProcessEvent(this, fn, &canfire);
+		return canfire;
+	}
+
+
 };

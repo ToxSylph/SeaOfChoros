@@ -2,22 +2,33 @@
 
 using namespace engine;
 
-void update()
-{
-	if (!updateGameVars())
-		return;
-	//tslog::info("Oxygen Level: %f", localPlayerActor->DrowningComponent->GetOxygenLevel());
-}
-
 void render(ImDrawList* drawList)
 {
+	static struct {
+		ACharacter* target = nullptr;
+		FVector location = FVector(0.f, 0.f, 0.f);
+		FRotator delta = FRotator(0.f, 0.f, 0.f);
+		float best = FLT_MAX;
+		float smoothness = 1.f;
+	} aimBest;
+	aimBest.target = nullptr;
+	aimBest.best = FLT_MAX;
+
 	auto& io = ImGui::GetIO();
 	auto const world = *UWorld::GWorld;
 	const auto myLocation = localPlayerActor->K2_GetActorLocation();
 	const auto camera = ((AController*)playerController)->PlayerCameraManager;
 	const auto cameraLocation = camera->GetCameraLocation();
 	const auto cameraRotation = camera->GetCameraRotation();
-	const auto item = localPlayerActor->GetWieldedItem();
+	auto item = localPlayerActor->GetWieldedItem();
+
+	bool isWieldedWeapon = false;
+	if (item) isWieldedWeapon = item->isWeapon();
+
+	const auto localSword = *reinterpret_cast<AMeleeWeapon**>(&item);
+	const auto localWeapon = *reinterpret_cast<AProjectileWeapon**>(&item);
+	ACharacter* attachObject = localPlayerActor->GetAttachParentActor();
+
 
 	int XMarksMapCount = 1;
 
@@ -35,6 +46,43 @@ void render(ImDrawList* drawList)
 				playerController->FOV(cfg->client.fov * 0.2f);
 			}
 			desiredTimeFOV = milliseconds_now() + 100;
+		}
+
+		if (cfg->client.oxygen && localPlayerActor->IsInWater())
+		{
+			auto drownComp = localPlayerActor->DrowningComponent;
+			if (drownComp)
+			{
+				float level = drownComp->GetOxygenLevel();
+				auto posX = io.DisplaySize.x * 0.5f;
+				auto posY = io.DisplaySize.y * 0.85f;
+				auto barWidth = io.DisplaySize.x * 0.05f;
+				auto barHeight = io.DisplaySize.y * 0.0030f;
+				drawList->AddRectFilled({ posX - barWidth, posY - barHeight }, { posX + barWidth, posY + barHeight }, ImGui::GetColorU32(IM_COL32(0, 0, 0, 255)));
+				drawList->AddRectFilled({ posX - barWidth, posY - barHeight }, { posX - barWidth + barWidth * level * 2.f, posY + barHeight }, ImGui::GetColorU32(IM_COL32(0, 200, 255, 255)));
+				char buf[0x64];
+				float pLevel = level * 100.f;
+				sprintf_s(buf, sizeof(buf), "[ %.0f%% ]", pLevel);
+				auto oxColor = level > 0.25f ? ImVec4(0.f, 1.f, 0.f, 1.f) : ImVec4(1.f, 0.f, 0.f, 1.f);
+				RenderText(drawList, buf, FVector2D(posX + (barWidth * 0.5f), posY + barHeight + 10.f), oxColor, 20);
+			}
+		}
+		if (cfg->client.crosshair)
+		{
+			switch (cfg->client.crosshairType)
+			{
+			case Config::Configuration::ECrosshairs::ENone:
+				break;
+			case Config::Configuration::ECrosshairs::ECircle:
+				drawList->AddCircle({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f }, cfg->client.crosshairSize, ImGui::GetColorU32(cfg->client.crosshairColor), 0, cfg->client.crosshairThickness);
+				break;
+			case Config::Configuration::ECrosshairs::ECross:
+				drawList->AddLine({ io.DisplaySize.x * 0.5f - cfg->client.crosshairSize, io.DisplaySize.y * 0.5f }, { io.DisplaySize.x * 0.5f + cfg->client.crosshairSize, io.DisplaySize.y * 0.5f }, ImGui::GetColorU32(cfg->client.crosshairColor), cfg->client.crosshairThickness);
+				drawList->AddLine({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f - cfg->client.crosshairSize }, { io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f + cfg->client.crosshairSize }, ImGui::GetColorU32(cfg->client.crosshairColor), cfg->client.crosshairThickness);
+				break;
+			default:
+				break;
+			}
 		}
 	}
 	if (cfg->esp.enable)
@@ -421,6 +469,30 @@ void render(ImDrawList* drawList)
 						}
 					}
 				}
+				if (cfg->esp.items.animals && actor->isAnimal())
+				{
+					FVector origin, extent;
+					actor->GetActorBounds(true, origin, extent);
+					FVector2D headPos;
+					if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z + extent.Z }, headPos)) continue;
+					FVector2D footPos;
+					if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z - extent.Z }, footPos)) continue;
+					float height = abs(footPos.Y - headPos.Y);
+					float width = height * 0.6f;
+
+					FText displayNameText = reinterpret_cast<AFauna*>(actor)->DisplayName;
+					FString displayNameString = FString(displayNameText.TextData->Text);
+					if (displayNameString.IsValid()) {
+						const float dist = myLocation.DistTo(origin) * 0.01f;
+						if (dist > cfg->esp.items.animalsRenderDistance) continue;
+						char buf[0x32];
+						const int len = displayNameString.multi(buf, 0x50);
+						snprintf(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
+						const float adjust = height * 0.05f;
+						FVector2D pos = { headPos.X, headPos.Y - adjust };
+						RenderText(drawList, buf, pos, cfg->esp.items.animalsColor, dist);
+					}
+				}
 				if (cfg->esp.others.enable)
 				{
 					if (cfg->esp.others.shipwrecks && (actor->isShipwreck() || actor->compareName("BP_Shipwreck_01_a_NetProxy_C")))
@@ -525,6 +597,213 @@ void render(ImDrawList* drawList)
 					}
 				}
 			}
+
+			if (cfg->aim.weapon.enable)
+			{
+
+				if (isWieldedWeapon && cfg->aim.weapon.enable)
+				{
+					if (cfg->aim.weapon.players && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
+					{
+						do
+						{
+							FVector playerLoc = actor->K2_GetActorLocation();
+							if (!actor->IsInWater() && localWeapon->WeaponParameters.NumberOfProjectiles == 1)
+							{
+								playerLoc.Z += cfg->aim.weapon.height;
+							}
+							float dist = myLocation.DistTo(playerLoc);
+							if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) { break; }
+							if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) { break; }
+							if (UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor)) break;
+							FRotator rotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, playerLoc), cameraRotation);
+							float absYaw = abs(rotationDelta.Yaw);
+							float absPitch = abs(rotationDelta.Pitch);
+							if (absYaw > cfg->aim.weapon.fYaw || absPitch > cfg->aim.weapon.fPitch) { break; }
+							float sum = absYaw + absPitch;
+							if (sum < aimBest.best)
+							{
+								aimBest.target = actor;
+								aimBest.location = playerLoc;
+								aimBest.delta = rotationDelta;
+								aimBest.best = sum;
+								aimBest.smoothness = cfg->aim.weapon.smooth;
+							}
+
+						} while (false);
+					}
+					if (cfg->aim.weapon.kegs)
+					{
+						if (actor->compareName("BP_MerchantCrate_GunpowderBarrel_"))
+						{
+							do
+							{
+								const FVector playerLoc = actor->K2_GetActorLocation();
+								const float dist = myLocation.DistTo(playerLoc);
+								if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) break;
+								if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) break;
+								const FRotator rotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, playerLoc), cameraRotation);
+								const float absYaw = abs(rotationDelta.Yaw);
+								const float absPitch = abs(rotationDelta.Pitch);
+								if (absYaw > cfg->aim.weapon.fYaw || absPitch > cfg->aim.weapon.fPitch) break;
+								const float sum = absYaw + absPitch;
+								if (sum < aimBest.best)
+								{
+									aimBest.target = actor;
+									aimBest.location = playerLoc;
+									aimBest.delta = rotationDelta;
+									aimBest.best = sum;
+									aimBest.smoothness = cfg->aim.weapon.smooth;
+								}
+
+							} while (false);
+						}
+					}
+					if (cfg->aim.weapon.skeletons && actor->isSkeleton() && !actor->IsDead())
+					{
+						do
+						{
+							FVector playerLoc = actor->K2_GetActorLocation();
+							if (localWeapon->WeaponParameters.NumberOfProjectiles == 1)
+								playerLoc.Z += cfg->aim.weapon.height;
+							const float dist = myLocation.DistTo(playerLoc);
+							if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) break;
+							if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) break;
+							const FRotator rotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, playerLoc), cameraRotation);
+							const float absYaw = abs(rotationDelta.Yaw);
+							const float absPitch = abs(rotationDelta.Pitch);
+							if (absYaw > cfg->aim.weapon.fYaw || absPitch > cfg->aim.weapon.fPitch) break;
+							const float sum = absYaw + absPitch;
+							if (sum < aimBest.best)
+							{
+								aimBest.target = actor;
+								aimBest.location = playerLoc;
+								aimBest.delta = rotationDelta;
+								aimBest.best = sum;
+								aimBest.smoothness = cfg->aim.weapon.smooth;
+							}
+						} while (false);
+					}
+				}
+			}
+		}
+	}
+	if (aimBest.target != nullptr)
+	{
+		FVector2D screen;
+		if (playerController->ProjectWorldLocationToScreen(aimBest.location, screen))
+		{
+			auto col = ImGui::GetColorU32(IM_COL32(0, 200, 0, 255));
+			drawList->AddCircle({ screen.X, screen.Y }, 5.f, col, 0, 3);
+			drawList->AddLine({ screen.X, screen.Y - 20.f }, { screen.X, screen.Y + 20.f }, col, 2);
+			drawList->AddLine({ screen.X - 20.f, screen.Y }, { screen.X + 20.f, screen.Y }, col, 2);
+		}
+		static std::uintptr_t shotDesiredTime = 0;
+		if (GetAsyncKeyState(VK_RBUTTON))
+		{
+			if (true)
+			{
+				FVector LV;
+				FVector TV;
+
+				if (cfg->aim.weapon.calcShipVel)
+				{
+					try // Kegs exception
+					{
+						LV = localPlayerActor->GetVelocity();
+						if (auto const localShip = localPlayerActor->GetCurrentShip()) LV += localShip->GetVelocity();
+						TV = aimBest.target->GetVelocity();
+						if (auto const targetShip = aimBest.target->GetCurrentShip()) TV += targetShip->GetVelocity();
+					}
+					catch (...)
+					{
+						LV = { 0.f,0.f,0.f };
+						TV = { 0.f,0.f,0.f };
+					}
+				}
+				else
+				{
+					LV = { 0.f,0.f,0.f };
+					TV = { 0.f,0.f,0.f };
+				}
+				const FVector RV = TV - LV;
+				const float BS = localWeapon->WeaponParameters.AmmoParams.Velocity;
+				const FVector RL = myLocation - aimBest.location;
+				const float a = RV.Size() - BS * BS;
+				const float b = (RL * RV * 2.f).Sum();
+				const float c = RL.SizeSquared();
+				const float D = b * b - 4 * a * c;
+				if (D > 0)
+				{
+					const float DRoot = sqrtf(D);
+					const float x1 = (-b + DRoot) / (2 * a);
+					const float x2 = (-b - DRoot) / (2 * a);
+					if (x1 >= 0 && x1 >= x2) aimBest.location += RV * x1;
+					else if (x2 >= 0) aimBest.location += RV * x2;
+					aimBest.delta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, aimBest.location), cameraRotation);
+					auto smoothness = 1.f / aimBest.smoothness;
+					playerController->AddYawInput(aimBest.delta.Yaw * smoothness);
+					playerController->AddPitchInput(aimBest.delta.Pitch * -smoothness);
+				}
+				static byte shotFixC = 0;
+				static bool shotFixing = false;
+
+				if (cfg->aim.weapon.trigger && isWieldedWeapon && localWeapon->CanFire())
+				{
+					do {
+						if (shotFixC != 1 && !shotFixing)
+						{
+							shotFixC++;
+							break;
+						}
+						if (shotDesiredTime == 0)
+						{
+							shotDesiredTime = milliseconds_now() + 210;
+							shotFixing = true;
+						}
+						if (milliseconds_now() >= shotDesiredTime)
+						{
+							shotDesiredTime = 0;
+							shotFixing = false;
+						}
+						else
+						{
+							break;
+						}
+
+						if (!playerController->LineOfSightTo(aimBest.target, cameraLocation, false)) break;
+						INPUT inputs[6] = {};
+						ZeroMemory(inputs, sizeof(inputs));
+
+						inputs[0].type = INPUT_MOUSE;
+						inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+						inputs[1].type = INPUT_MOUSE;
+						inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+
+						inputs[2].type = INPUT_KEYBOARD;
+						inputs[2].ki.wVk = 0x58; // X Key
+
+						inputs[3].type = INPUT_KEYBOARD;
+						inputs[3].ki.wVk = 0x58; // X Key
+						inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+
+						inputs[4].type = INPUT_KEYBOARD;
+						inputs[4].ki.wVk = 0x58; // X Key
+
+						inputs[5].type = INPUT_KEYBOARD;
+						inputs[5].ki.wVk = 0x58; // X Key
+						inputs[5].ki.dwFlags = KEYEVENTF_KEYUP;
+
+						SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+						shotFixC = 0;
+					} while (false);
+				}
+			}
+		}
+		else
+		{
+			shotDesiredTime = 0;
 		}
 	}
 }
@@ -585,7 +864,7 @@ bool updateGameVars()
 	if (!playerController) return false;
 	localPlayerActor = (AAthenaPlayerCharacter*)playerController->K2_GetPawn();
 	if (!localPlayerActor) return false;
-	if (localPlayerActor->IsLoading()) return false;
+	if (!checkGameVars()) return false;
 	return true;
 }
 

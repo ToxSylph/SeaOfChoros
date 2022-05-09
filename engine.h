@@ -11,7 +11,6 @@
 
 namespace engine
 {
-
 	static UAthenaGameViewportClient* AthenaGameViewportClient = nullptr;
 	static ULocalPlayer* localPlayer = nullptr;
 	static APlayerController* playerController = nullptr;
@@ -20,7 +19,6 @@ namespace engine
 	static Config::Configuration* cfg = &Config::cfg;
 }
 
-void update();
 void render(ImDrawList* drawList);
 bool initUE4(uintptr_t world, uintptr_t objects, uintptr_t names);
 bool setGameVars();
