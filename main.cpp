@@ -442,7 +442,17 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				if (ImGui::BeginChild("CannonAim", ImVec2(0.f, 0.f), true, 0))
 				{
 					ImGui::Checkbox("Enable", &Config::cfg.aim.cannon.enable);
-
+					ImGui::SliderFloat("Pitch", &Config::cfg.aim.cannon.fPitch, 1.f, 100.f, "%.0f");
+					ImGui::SliderFloat("Yaw", &Config::cfg.aim.cannon.fYaw, 1.f, 100.f, "%.0f");
+					ImGui::SliderFloat("Smoothness", &Config::cfg.aim.cannon.smooth, 1.f, 100.f, "%.0f");
+					ImGui::Checkbox("Instant Shot", &Config::cfg.aim.cannon.instant);
+					ImGui::Checkbox("Chain Shots", &Config::cfg.aim.cannon.chains);
+					ImGui::Checkbox("Players", &Config::cfg.aim.cannon.players);
+					ImGui::Checkbox("Skeletons", &Config::cfg.aim.cannon.skeletons);
+					ImGui::Checkbox("Ghost Ships", &Config::cfg.aim.cannon.ghostShips);
+					ImGui::Checkbox("Aim To Hull", &Config::cfg.aim.cannon.lowAim);
+					ImGui::Checkbox("Player2Deck", &Config::cfg.aim.cannon.deckshots);
+					ImGui::Checkbox("Visible Only", &Config::cfg.aim.cannon.visibleOnly);
 				}
 				ImGui::EndChild();
 

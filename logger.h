@@ -5,7 +5,6 @@
 #include <string>
 #include <stdio.h>
 
-#define str(x) std::string(x)
 #define va_buffer(ap,parmN,buffer) { va_list ap; va_start(ap, parmN); vsnprintf(buffer, sizeof(buffer), parmN, ap); va_end(ap); }
 
 #define PRINT_DEBUG_LOGS 1

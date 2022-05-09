@@ -1,5 +1,88 @@
 #include "engine.h"
 
+
+#include <complex>
+void SolveQuartic(const std::complex<float> coefficients[5], std::complex<float> roots[4]) {
+	const std::complex<float> a = coefficients[4];
+	const std::complex<float> b = coefficients[3] / a;
+	const std::complex<float> c = coefficients[2] / a;
+	const std::complex<float> d = coefficients[1] / a;
+	const std::complex<float> e = coefficients[0] / a;
+	const std::complex<float> Q1 = c * c - 3.f * b * d + 12.f * e;
+	const std::complex<float> Q2 = 2.f * c * c * c - 9.f * b * c * d + 27.f * d * d + 27.f * b * b * e - 72.f * c * e;
+	const std::complex<float> Q3 = 8.f * b * c - 16.f * d - 2.f * b * b * b;
+	const std::complex<float> Q4 = 3.f * b * b - 8.f * c;
+	const std::complex<float> Q5 = std::pow(Q2 / 2.f + std::sqrt(Q2 * Q2 / 4.f - Q1 * Q1 * Q1), 1.f / 3.f);
+	const std::complex<float> Q6 = (Q1 / Q5 + Q5) / 3.f;
+	const std::complex<float> Q7 = 2.f * std::sqrt(Q4 / 12.f + Q6);
+	roots[0] = (-b - Q7 - std::sqrt(4.f * Q4 / 6.f - 4.f * Q6 - Q3 / Q7)) / 4.f;
+	roots[1] = (-b - Q7 + std::sqrt(4.f * Q4 / 6.f - 4.f * Q6 - Q3 / Q7)) / 4.f;
+	roots[2] = (-b + Q7 - std::sqrt(4.f * Q4 / 6.f - 4.f * Q6 + Q3 / Q7)) / 4.f;
+	roots[3] = (-b + Q7 + std::sqrt(4.f * Q4 / 6.f - 4.f * Q6 + Q3 / Q7)) / 4.f;
+}
+
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+FRotator ToFRotator(FVector vec)
+{
+	FRotator rot;
+	float RADPI = (float)(180 / M_PI);
+	rot.Yaw = (float)(atan2f(vec.Y, vec.X) * RADPI);
+	rot.Pitch = (float)atan2f(vec.Z, sqrt((vec.X * vec.X) + (vec.Y * vec.Y))) * RADPI;
+	rot.Roll = 0;
+	return rot;
+}
+
+int AimAtStaticTarget(const FVector& oTargetPos, float fProjectileSpeed, float fProjectileGravityScalar, const FVector& oSourcePos, FRotator& oOutLow, FRotator& oOutHigh) {
+	const float gravity = 981.f * fProjectileGravityScalar;
+	const FVector diff(oTargetPos - oSourcePos);
+	const FVector oDiffXY(diff.X, diff.Y, 0.0f);
+	const float fGroundDist = oDiffXY.Size();
+	const float s2 = fProjectileSpeed * fProjectileSpeed;
+	const float s4 = s2 * s2;
+	const float y = diff.Z;
+	const float x = fGroundDist;
+	const float gx = gravity * x;
+	float root = s4 - (gravity * ((gx * x) + (2 * y * s2)));
+	if (root < 0)
+		return 0;
+	root = std::sqrtf(root);
+	const float fLowAngle = std::atan2f((s2 - root), gx);
+	const float fHighAngle = std::atan2f((s2 + root), gx);
+	int nSolutions = fLowAngle != fHighAngle ? 2 : 1;
+	const FVector oGroundDir(oDiffXY.unit());
+	oOutLow = ToFRotator(oGroundDir * std::cosf(fLowAngle) * fProjectileSpeed + FVector(0.f, 0.f, 1.f) * std::sinf(fLowAngle) * fProjectileSpeed);
+	if (nSolutions == 2)
+		oOutHigh = ToFRotator(oGroundDir * std::cosf(fHighAngle) * fProjectileSpeed + FVector(0.f, 0.f, 1.f) * std::sinf(fHighAngle) * fProjectileSpeed);
+	return nSolutions;
+}
+
+#include <limits>
+int AimAtMovingTarget(const FVector& oTargetPos, const FVector& oTargetVelocity, float fProjectileSpeed, float fProjectileGravityScalar, const FVector& oSourcePos, const FVector& oSourceVelocity, FRotator& oOutLow, FRotator& oOutHigh) {
+	const FVector v(oTargetVelocity - oSourceVelocity);
+	const FVector g(0.f, 0.f, -981.f * fProjectileGravityScalar);
+	const FVector p(oTargetPos - oSourcePos);
+	const float c4 = g | g * 0.25f;
+	const float c3 = v | g;
+	const float c2 = (p | g) + (v | v) - (fProjectileSpeed * fProjectileSpeed);
+	const float c1 = 2.f * (p | v);
+	const float c0 = p | p;
+	std::complex<float> pOutRoots[4];
+	const std::complex<float> pInCoeffs[5] = { c0, c1, c2, c3, c4 };
+	SolveQuartic(pInCoeffs, pOutRoots);
+	float fBestRoot = FLT_MAX;
+	for (int i = 0; i < 4; i++) {
+		if (pOutRoots[i].real() > 0.f && std::abs(pOutRoots[i].imag()) < 0.0001f && pOutRoots[i].real() < fBestRoot) {
+			fBestRoot = pOutRoots[i].real();
+		}
+	}
+	if (fBestRoot == FLT_MAX)
+		return 0;
+	const FVector oAimAt = oTargetPos + (v * fBestRoot);
+	return AimAtStaticTarget(oAimAt, fProjectileSpeed, fProjectileGravityScalar, oSourcePos, oOutLow, oOutHigh);
+}
+
 using namespace engine;
 
 void render(ImDrawList* drawList)
@@ -635,8 +718,7 @@ void render(ImDrawList* drawList)
 							location = loc_mast;
 							gravity_scale = 1.f;
 							FRotator low, high;
-							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-							int i_solutions = 0;
+							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 							if (i_solutions < 1)
 								break;
 							low.Clamp();
@@ -668,8 +750,9 @@ void render(ImDrawList* drawList)
 							auto cannon = reinterpret_cast<ACannon*>(attachObject);
 							float gravity_scale = cannon->ProjectileGravityScale;
 							FRotator low, high;
-							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
-							int i_solutions = 0;
+							FVector acVelocity = actor->GetVelocity();
+							FVector acFVelocity = actor->GetForwardVelocity();
+							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
 							if (i_solutions < 1)
 								break;
 							low.Clamp();
@@ -700,8 +783,7 @@ void render(ImDrawList* drawList)
 							auto cannon = reinterpret_cast<ACannon*>(attachObject);
 							float gravity_scale = cannon->ProjectileGravityScale;
 							FRotator low, high;
-							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
-							int i_solutions = 0;
+							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
 							if (i_solutions < 1)
 								break;
 							low.Clamp();
@@ -766,8 +848,7 @@ void render(ImDrawList* drawList)
 								}
 							}
 							FRotator low, high;
-							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-							int i_solutions = 0;
+							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 							if (i_solutions < 1)
 								break;
 							low.Clamp();
@@ -805,8 +886,7 @@ void render(ImDrawList* drawList)
 							auto forward = actor->GetActorForwardVector();
 							forward *= ship->ShipState.ShipSpeed;
 							FRotator low, high;
-							//int i_solutions = AimAtMovingTarget(location, forward, cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-							int i_solutions = 0;
+							int i_solutions = AimAtMovingTarget(location, forward, cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 							if (i_solutions < 1)
 								break;
 							low.Clamp();
@@ -924,9 +1004,30 @@ void render(ImDrawList* drawList)
 			drawList->AddLine({ screen.X - 20.f, screen.Y }, { screen.X + 20.f, screen.Y }, col, 2);
 		}
 		static std::uintptr_t shotDesiredTime = 0;
+
 		if (GetAsyncKeyState(VK_RBUTTON))
 		{
-			if (true)
+			if (attachObject && attachObject->isCannon())
+			{
+				auto cannon = reinterpret_cast<ACannon*>(attachObject);
+				if (cannon)
+				{
+					if (((aimBest.delta.Pitch > cannon->PitchRange.max) || (aimBest.delta.Pitch < cannon->PitchRange.min)) || ((aimBest.delta.Yaw > cannon->YawRange.max) || (aimBest.delta.Yaw < cannon->YawRange.min)))
+					{
+						std::string str_text_message = "TARGET IS OUT OF RANGE!";
+						drawList->AddText({ io.DisplaySize.x * 0.5f , io.DisplaySize.y * 0.5f + 30.f }, 0xFFFFFFFF, str_text_message.c_str());
+					}
+					else
+					{
+						cannon->ForceAimCannon(aimBest.delta.Pitch, aimBest.delta.Yaw);
+						if (cfg->aim.cannon.instant && cannon->IsReadyToFire())
+						{
+							cannon->Fire();
+						}
+					}
+				}
+			}
+			else
 			{
 				FVector LV;
 				FVector TV;

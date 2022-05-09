@@ -126,6 +126,7 @@ public:
 				float fPitch = 1.f;
 				float fYaw = 1.f;
 				float smooth = 1.f;
+				bool instant = false;
 				bool chains = false;
 				bool players = false;
 				bool skeletons = false;
