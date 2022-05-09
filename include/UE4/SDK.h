@@ -558,6 +558,11 @@ struct ACharacter : APawn {
 		return IsA(obj);
 	}
 
+	inline bool isCannon() {
+		static auto obj = UObject::FindClass("Class Athena.Cannon");
+		return IsA(obj);
+	}
+
 	AHullDamage* GetHullDamage() {
 		static auto fn = UObject::FindObject<UFunction>("Function Athena.Ship.GetHullDamage");
 		AHullDamage* params = nullptr;
@@ -568,6 +573,20 @@ struct ACharacter : APawn {
 	AShipInternalWater* GetInternalWater() {
 		static auto fn = UObject::FindObject<UFunction>("Function Athena.Ship.GetInternalWater");
 		AShipInternalWater* params = nullptr;
+		ProcessEvent(this, fn, &params);
+		return params;
+	}
+
+	FVector GetActorForwardVector() {
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.GetActorForwardVector");
+		FVector params;
+		ProcessEvent(this, fn, &params);
+		return params;
+	}
+
+	FVector GetActorUpVector() {
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.GetActorUpVector");
+		FVector params;
 		ProcessEvent(this, fn, &params);
 		return params;
 	}
@@ -593,9 +612,23 @@ struct ACharacter : APawn {
 		return velocity;
 	}
 
+	FVector GetForwardVelocity() {
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.GetActorForwardVector");
+		FVector ForwardVelocity;
+		ProcessEvent(this, fn, &ForwardVelocity);
+		return ForwardVelocity;
+	}
+
 	FVector K2_GetActorLocation() {
 		static auto fn = FindObject<UFunction>("Function Engine.Actor.K2_GetActorLocation");
 		FVector params;
+		ProcessEvent(this, fn, &params);
+		return params;
+	}
+
+	FRotator K2_GetActorRotation() {
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.K2_GetActorRotation");
+		FRotator params;
 		ProcessEvent(this, fn, &params);
 		return params;
 	}
@@ -643,6 +676,156 @@ struct ACharacter : APawn {
 			return true;
 		return false;
 	}
+};
+
+struct FFloatRange {
+	float pad1;
+	float min;
+	float pad2;
+	float max;
+};
+
+struct ACannon {
+	char pad_4324[0x0528];
+	struct USkeletalMeshComponent* BaseMeshComponent; // 0x528(0x08)
+	struct UStaticMeshComponent* BarrelMeshComponent; // 0x530(0x08)
+	struct UStaticMeshComponent* FuseMeshComponent; // 0x538(0x08)
+	struct UReplicatedShipPartCustomizationComponent* CustomizationComponent; // 0x540(0x08)
+	struct ULoadableComponent* LoadableComponent; // 0x548(0x08)
+	struct ULoadingPointComponent* LoadingPointComponent; // 0x550(0x08)
+	struct UChildActorComponent* CannonBarrelInteractionComponent; // 0x558(0x08)
+	struct UFuseComponent* FuseComponent; // 0x560(0x08)
+	struct FName CameraSocket; // 0x568(0x08)
+	struct FName CameraInsideCannonSocket; // 0x570(0x08)
+	struct FName LaunchSocket; // 0x578(0x08)
+	struct FName TooltipSocket; // 0x580(0x08)
+	struct FName AudioAimRTPCName; // 0x588(0x08)
+	struct FName InsideCannonRTPCName; // 0x590(0x08)
+	struct UClass* ProjectileClass; // 0x598(0x08)
+	float TimePerFire; // 0x5a0(0x04)
+	float ProjectileSpeed; // 0x5a4(0x04)
+	float ProjectileGravityScale; // 0x5a8(0x04)
+	struct FFloatRange PitchRange; // 0x5ac(0x10)
+	struct FFloatRange YawRange; // 0x5bc(0x10)
+	float PitchSpeed; // 0x5cc(0x04)
+	float YawSpeed; // 0x5d0(0x04)
+	char UnknownData_5D4[0x4]; // 0x5d4(0x04)
+	struct UClass* CameraShake; // 0x5d8(0x08)
+	float ShakeInnerRadius; // 0x5e0(0x04)
+	float ShakeOuterRadius; // 0x5e4(0x04)
+	float CannonFiredAINoiseRange; // 0x5e8(0x04)
+	struct FName AINoiseTag; // 0x5ec(0x08)
+	unsigned char                                      UnknownData_WIJI[0x4];                                     // 0x05F4(0x0004) MISSED OFFSET (FIX SPACE BETWEEN PREVIOUS PROPERTY)
+	char pad_956335424[0x18];
+	unsigned char                                      UnknownData_YCZ3[0x20];                                    // 0x05F4(0x0020) FIX WRONG TYPE SIZE OF PREVIOUS PROPERTY
+	char pad_9335443224[0x18];
+	unsigned char                                      UnknownData_BEDV[0x20];                                    // 0x0630(0x0020) FIX WRONG TYPE SIZE OF PREVIOUS PROPERTY
+	float DefaultFOV; // 0x668(0x04)
+	float AimFOV; // 0x66c(0x04)
+	float IntoAimBlendSpeed; // 0x670(0x04)
+	float OutOfAimBlendSpeed; // 0x674(0x04)
+	struct UWwiseEvent* FireSfx; // 0x678(0x08)
+	struct UWwiseEvent* DryFireSfx; // 0x680(0x08)
+	struct UWwiseEvent* LoadingSfx_Play; // 0x688(0x08)
+	struct UWwiseEvent* LoadingSfx_Stop; // 0x690(0x08)
+	struct UWwiseEvent* UnloadingSfx_Play; // 0x698(0x08)
+	struct UWwiseEvent* UnloadingSfx_Stop; // 0x6a0(0x08)
+	struct UWwiseEvent* LoadedPlayerSfx; // 0x6a8(0x08)
+	struct UWwiseEvent* UnloadedPlayerSfx; // 0x6b0(0x08)
+	struct UWwiseEvent* FiredPlayerSfx; // 0x6b8(0x08)
+	struct UWwiseObjectPoolWrapper* SfxPool; // 0x6c0(0x08)
+	struct UWwiseEvent* StartPitchMovement; // 0x6c8(0x08)
+	struct UWwiseEvent* StopPitchMovement; // 0x6d0(0x08)
+	struct UWwiseEvent* StartYawMovement; // 0x6d8(0x08)
+	struct UWwiseEvent* StopYawMovement; // 0x6e0(0x08)
+	struct UWwiseEvent* StopMovementAtEnd; // 0x6e8(0x08)
+	struct UWwiseObjectPoolWrapper* SfxMovementPool; // 0x6f0(0x08)
+	struct UObject* FuseVfxFirstPerson; // 0x6f8(0x08)
+	struct UObject* FuseVfxThirdPerson; // 0x700(0x08)
+	struct UObject* MuzzleFlashVfxFirstPerson; // 0x708(0x08)
+	struct UObject* MuzzleFlashVfxThirdPerson; // 0x710(0x08)
+	struct FName FuseSocketName; // 0x718(0x08)
+	struct FName BarrelSocketName; // 0x720(0x08)
+	struct UClass* RadialCategoryFilter; // 0x728(0x08)
+	struct UClass* DefaultLoadedItemDesc; // 0x730(0x08)
+	float ClientRotationBlendTime; // 0x738(0x04)
+	char UnknownData_73C[0x4]; // 0x73c(0x04)
+	char UnknownData_740[0x18]; // 0x73c(0x18)
+	struct AItemInfo* LoadedItemInfo; // 0x740(0x08) // fix: 0x758
+	unsigned char UnknownData_LECI[0xc]; // 0x748(0x0c)
+	float ServerPitch; // 0x754(0x04)
+	float ServerYaw; // 0x758(0x04)
+
+	void HandlePitchInput(float Pitch)
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.HandlePitchInput");
+		struct {
+			float Pitch;
+		} params;
+		params.Pitch = Pitch;
+
+		ProcessEvent(this, fn, &params);
+	}
+
+	void HandleYawInput(float Yaw)
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.HandleYawInput");
+		struct {
+			float Yaw;
+		} params;
+		params.Yaw = Yaw;
+
+		ProcessEvent(this, fn, &params);
+	}
+
+	void ForceAimCannon(float Pitch, float Yaw)
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.ForceAimCannon");
+		struct {
+			float Pitch;
+			float Yaw;
+		} params;
+		params.Pitch = Pitch;
+		params.Yaw = Yaw;
+		ProcessEvent(this, fn, &params);
+	}
+
+	bool IsReadyToFire() {
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.IsReadyToFire");
+		bool is_ready = true;
+		ProcessEvent(this, fn, &is_ready);
+		return is_ready;
+	}
+
+	void Fire() {
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.Fire");
+		ProcessEvent(this, fn, nullptr);
+	}
+
+	bool IsReadyToReload() {
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.IsReadyToReload");
+		bool is_ready = true;
+		ProcessEvent(this, fn, &is_ready);
+		return is_ready;
+	}
+
+	void Reload() {
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.Reload");
+		ProcessEvent(this, fn, nullptr);
+	}
+
+	void Server_Fire(float Pitch, float Yaw)
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.Cannon.Server_Fire");
+		struct {
+			float Pitch;
+			float Yaw;
+		} params;
+		params.Pitch = Pitch;
+		params.Yaw = Yaw;
+		ProcessEvent(this, fn, &params);
+	}
+
 };
 
 struct ASlidingDoor {
@@ -1522,12 +1705,21 @@ public:
 	}
 };
 
+struct FAggressiveGhostShipState {
+	bool IsShipVisible; // 0x00(0x01)
+	bool IsShipDead; // 0x01(0x01)
+	char UnknownData_2[0x2]; // 0x02(0x02)
+	float ShipSpeed; // 0x04(0x04)
+};
+
 // Class Athena.AggressiveGhostShip
 // Size: 0x880 (Inherited: 0x3d0)
 struct AAggressiveGhostShip : AActor {
-	char UnknownData_3D0[0x174]; // 0x3d0(0x40)
+	char UnknownData_3D0[0x158]; // 0x3d0(0x40)
+	struct FAggressiveGhostShipState ShipState; // 0x528(0x08)
+	char UnknownData_530[0x14]; // 0x530(0x14)
 	int32_t NumShotsLeftToKill; // 0x544(0x04)
-	char UnknownData_780[0x338]; // 0x548(0x338)
+	char UnknownData_548[0x338]; // 0x548(0x338)
 };
 
 enum class EDrawDebugTrace : uint8_t

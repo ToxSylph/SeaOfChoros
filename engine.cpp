@@ -598,10 +598,235 @@ void render(ImDrawList* drawList)
 				}
 			}
 
-			if (cfg->aim.weapon.enable)
+			if (cfg->aim.enable)
 			{
-
-				if (isWieldedWeapon && cfg->aim.weapon.enable)
+				if (attachObject && attachObject->isCannon() && cfg->aim.cannon.enable)
+				{
+					if (cfg->aim.cannon.chains && actor->isShip())
+					{
+						do
+						{
+							if (actor == localPlayerActor->GetCurrentShip())
+							{
+								break;
+							}
+							FVector location = actor->K2_GetActorLocation();
+							if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
+							{
+								break;
+							}
+							if (location.DistTo(cameraLocation) > 55000)
+							{
+								break;
+							}
+							int amount = 0;
+							auto water = actor->GetInternalWater();
+							amount = water->GetNormalizedWaterAmount() * 100.f;
+							if (amount == 100)
+								break;
+							auto cannon = reinterpret_cast<ACannon*>(attachObject);
+							float gravity_scale = cannon->ProjectileGravityScale;
+							const FVector forward = actor->GetActorForwardVector();
+							const FVector up = actor->GetActorUpVector();
+							const FVector loc = actor->K2_GetActorLocation();
+							FVector loc_mast = loc;
+							loc_mast += forward * 80.f;
+							loc_mast += up * 1300.f;
+							location = loc_mast;
+							gravity_scale = 1.f;
+							FRotator low, high;
+							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
+							int i_solutions = 0;
+							if (i_solutions < 1)
+								break;
+							low.Clamp();
+							low -= attachObject->K2_GetActorRotation();
+							low.Clamp();
+							float absPitch = abs(low.Pitch);
+							float absYaw = abs(low.Yaw);
+							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+							float sum = absYaw + absPitch;
+							if (sum < aimBest.best)
+							{
+								aimBest.target = actor;
+								aimBest.location = location;
+								aimBest.delta = low;
+								aimBest.best = sum;
+							}
+						} while (false);
+					}
+					if (cfg->aim.cannon.players && cfg->aim.cannon.chains == false && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
+					{
+						do
+						{
+							if (UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor)) break;
+							FVector location = actor->K2_GetActorLocation();
+							if (location.DistTo(cameraLocation) > 55000)
+							{
+								break;
+							}
+							auto cannon = reinterpret_cast<ACannon*>(attachObject);
+							float gravity_scale = cannon->ProjectileGravityScale;
+							FRotator low, high;
+							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
+							int i_solutions = 0;
+							if (i_solutions < 1)
+								break;
+							low.Clamp();
+							low -= attachObject->K2_GetActorRotation();
+							low.Clamp();
+							float absPitch = abs(low.Pitch);
+							float absYaw = abs(low.Yaw);
+							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+							float sum = absYaw + absPitch;
+							if (sum < aimBest.best)
+							{
+								aimBest.target = actor;
+								aimBest.location = location;
+								aimBest.delta = low;
+								aimBest.best = sum;
+							}
+						} while (false);
+					}
+					if (cfg->aim.cannon.skeletons && cfg->aim.cannon.chains == false && actor->isSkeleton() && actor != localPlayerActor && !actor->IsDead() && !playerController->LineOfSightTo(actor, cameraLocation, false))
+					{
+						do
+						{
+							FVector location = actor->K2_GetActorLocation();
+							if (location.DistTo(cameraLocation) > 55000)
+							{
+								break;
+							}
+							auto cannon = reinterpret_cast<ACannon*>(attachObject);
+							float gravity_scale = cannon->ProjectileGravityScale;
+							FRotator low, high;
+							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
+							int i_solutions = 0;
+							if (i_solutions < 1)
+								break;
+							low.Clamp();
+							low -= attachObject->K2_GetActorRotation();
+							low.Clamp();
+							float absPitch = abs(low.Pitch);
+							float absYaw = abs(low.Yaw);
+							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+							float sum = absYaw + absPitch;
+							if (sum < aimBest.best)
+							{
+								aimBest.target = actor;
+								aimBest.location = location;
+								aimBest.delta = low;
+								aimBest.best = sum;
+							}
+						} while (false);
+					}
+					if (cfg->aim.cannon.chains == false && actor->isShip())
+					{
+						do
+						{
+							if (actor == localPlayerActor->GetCurrentShip())
+							{
+								break;
+							}
+							FVector location = actor->K2_GetActorLocation();
+							if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
+							{
+								break;
+							}
+							if (location.DistTo(cameraLocation) > 55000)
+							{
+								break;
+							}
+							auto cannon = reinterpret_cast<ACannon*>(attachObject);
+							int amount = 0;
+							auto water = actor->GetInternalWater();
+							amount = water->GetNormalizedWaterAmount() * 100.f;
+							if (amount == 100)
+								break;
+							float gravity_scale = cannon->ProjectileGravityScale;
+							if (cfg->aim.cannon.deckshots)
+							{
+								const FVector forward = actor->GetActorForwardVector();
+								const FVector up = actor->GetActorUpVector();
+								const FVector loc = actor->K2_GetActorLocation();
+								FVector loc_mast = loc;
+								loc_mast += forward * 52.f;
+								loc_mast += up * 275.f;
+								location = loc_mast;
+								gravity_scale = 1.30f;
+							}
+							else if (cfg->aim.cannon.lowAim)
+							{
+								auto const damage = actor->GetHullDamage();
+								if (damage)
+								{
+									FVector loc = pickHoleToAim(damage, myLocation);
+									if (loc.Sum() != 9999.f)
+										location = loc;
+								}
+							}
+							FRotator low, high;
+							//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
+							int i_solutions = 0;
+							if (i_solutions < 1)
+								break;
+							low.Clamp();
+							low -= attachObject->K2_GetActorRotation();
+							low.Clamp();
+							float absPitch = abs(low.Pitch);
+							float absYaw = abs(low.Yaw);
+							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+							float sum = absYaw + absPitch;
+							if (sum < aimBest.best)
+							{
+								aimBest.target = actor;
+								aimBest.location = location;
+								aimBest.delta = low;
+								aimBest.best = sum;
+							}
+						} while (false);
+					}
+					if (cfg->aim.cannon.ghostShips && cfg->aim.cannon.chains == false && actor->isGhostShip())
+					{
+						do
+						{
+							FVector location = actor->K2_GetActorLocation();
+							auto ship = reinterpret_cast<AAggressiveGhostShip*>(actor);
+							if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
+							{
+								break;
+							}
+							if (myLocation.DistTo(location) > 55000)
+							{
+								break;
+							}
+							auto cannon = reinterpret_cast<ACannon*>(attachObject);
+							float gravity_scale = cannon->ProjectileGravityScale;
+							auto forward = actor->GetActorForwardVector();
+							forward *= ship->ShipState.ShipSpeed;
+							FRotator low, high;
+							//int i_solutions = AimAtMovingTarget(location, forward, cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
+							int i_solutions = 0;
+							if (i_solutions < 1)
+								break;
+							low.Clamp();
+							low -= attachObject->K2_GetActorRotation();
+							low.Clamp();
+							float absPitch = abs(low.Pitch);
+							float absYaw = abs(low.Yaw);
+							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+							float sum = absYaw + absPitch;
+							if (sum < aimBest.best)
+							{
+								aimBest.target = actor;
+								aimBest.location = location;
+								aimBest.delta = low;
+								aimBest.best = sum;
+							}
+						} while (false);
+					}
+				}
+				else if (isWieldedWeapon && cfg->aim.weapon.enable)
 				{
 					if (cfg->aim.weapon.players && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
 					{
@@ -1081,6 +1306,29 @@ bool raytrace(UWorld* world, const struct FVector& start, const struct FVector& 
 	return UKismetMathLibrary::LineTraceSingle_NEW((UObject*)world, start, end, ETraceTypeQuery::TraceTypeQuery3, true, TArray<AActor*>(), EDrawDebugTrace::EDrawDebugTrace__None, true, hit);
 }
 
+// Picks the closest undamaged HullDamageZone
+FVector pickHoleToAim(AHullDamage* damage, const FVector& localLoc)
+{
+	FVector fLocation = { 0.f, 0.f, 9999.f };
+	FVector location = FVector();
+	float currentDist = 55000.f;
+	const auto holes = damage->DamageZones;
+	for (auto h = 0u; h < holes.Count; h++)
+	{
+		auto const hole = holes[h];
+		if (hole->DamageLevel < 3)
+		{
+			location = FVector(reinterpret_cast<ACharacter*>(hole)->K2_GetActorLocation());
+			float dist = localLoc.DistTo(location);
+			if (dist <= currentDist)
+			{
+				currentDist = dist;
+				fLocation = location;
+			}
+		}
+	}
+	return fLocation;
+}
 
 int getMapNameCode(char* name)
 {

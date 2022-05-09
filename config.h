@@ -123,6 +123,16 @@ public:
 			struct
 			{
 				bool enable = false;
+				float fPitch = 1.f;
+				float fYaw = 1.f;
+				float smooth = 1.f;
+				bool chains = false;
+				bool players = false;
+				bool skeletons = false;
+				bool deckshots = false;
+				bool ghostShips = false;
+				bool lowAim = false;
+				bool visibleOnly = false;
 			}cannon;
 		}aim;
 		struct
