@@ -191,36 +191,6 @@ void render(ImDrawList* drawList)
 				break;
 			}
 		}
-		if (cfg->client.shipInfo)
-		{
-			auto ship = localPlayerActor->GetCurrentShip();
-			if (ship)
-			{
-				FVector velocity = ship->GetVelocity() / 100.f;
-				char buf[0xFF];
-				FVector2D pos{ 10.f, 45.f };
-				ImVec4 col{ 1.f,1.f,1.f,1.f };
-				auto speed = velocity.Size();
-				sprintf_s(buf, "Speed: %.0fm/s", speed);
-				pos.Y += 5.f;
-				RenderText(drawList, buf, pos, col, 20, false);
-				int holes = ship->GetHullDamage()->ActiveHullDamageZones.Count;
-				sprintf_s(buf, "Holes: %d", holes);
-				pos.Y += 20.f;
-				RenderText(drawList, buf, pos, col, 20, false);
-				int amount = 0;
-				auto water = ship->GetInternalWater();
-				if (water) amount = water->GetNormalizedWaterAmount() * 100.f;
-				sprintf_s(buf, "Water: %d%%", amount);
-				pos.Y += 20.f;
-				RenderText(drawList, buf, pos, col, 20, false);
-				pos.Y += 22.f;
-				float internal_water_percent = ship->GetInternalWater()->GetNormalizedWaterAmount();
-				drawList->AddLine({ pos.X - 1, pos.Y }, { pos.X + 100 + 1, pos.Y }, 0xFF000000, 6);
-				drawList->AddLine({ pos.X, pos.Y }, { pos.X + 100, pos.Y }, 0xFF00FF00, 4);
-				drawList->AddLine({ pos.X, pos.Y }, { pos.X + (100.f * internal_water_percent), pos.Y }, 0xFF0000FF, 4);
-			}
-		}
 	}
 	if (cfg->esp.enable)
 	{
@@ -286,6 +256,76 @@ void render(ImDrawList* drawList)
 							drawList->AddLine({ screen_pos_prev.X, screen_pos_prev.Y }, { screen_pos.X, screen_pos.Y }, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 0.f, 1.f)), 1);
 						screen_pos_prev = screen_pos;
 					}
+				}
+			}
+		}
+	}
+	static FVector ShipSinkLocation;
+	static bool hasBeenSunk = false;
+	static bool justSunked = false;
+	auto ship = localPlayerActor->GetCurrentShip();
+
+	if (ship)
+	{
+		if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 == 100.f)
+		{
+			if (!justSunked)
+			{
+				ShipSinkLocation = ship->K2_GetActorLocation();
+				justSunked = true;
+				hasBeenSunk = true;
+			}
+		}
+		else if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 != 100)
+		{
+			justSunked = false;
+		}
+
+	}
+	if (cfg->game.enable)
+	{
+		if (cfg->game.shipInfo)
+		{
+			auto ship = localPlayerActor->GetCurrentShip();
+			if (ship)
+			{
+				FVector velocity = ship->GetVelocity() / 100.f;
+				char buf[0xFF];
+				FVector2D pos{ 10.f, 45.f };
+				ImVec4 col{ 1.f,1.f,1.f,1.f };
+				auto speed = velocity.Size();
+				sprintf_s(buf, "Speed: %.0fm/s", speed);
+				pos.Y += 5.f;
+				RenderText(drawList, buf, pos, col, 20, false);
+				int holes = ship->GetHullDamage()->ActiveHullDamageZones.Count;
+				sprintf_s(buf, "Holes: %d", holes);
+				pos.Y += 20.f;
+				RenderText(drawList, buf, pos, col, 20, false);
+				int amount = 0;
+				auto water = ship->GetInternalWater();
+				if (water) amount = water->GetNormalizedWaterAmount() * 100.f;
+				sprintf_s(buf, "Water: %d%%", amount);
+				pos.Y += 20.f;
+				RenderText(drawList, buf, pos, col, 20, false);
+				pos.Y += 22.f;
+				float internal_water_percent = ship->GetInternalWater()->GetNormalizedWaterAmount();
+				drawList->AddLine({ pos.X - 1, pos.Y }, { pos.X + 100 + 1, pos.Y }, 0xFF000000, 6);
+				drawList->AddLine({ pos.X, pos.Y }, { pos.X + 100, pos.Y }, 0xFF00FF00, 4);
+				drawList->AddLine({ pos.X, pos.Y }, { pos.X + (100.f * internal_water_percent), pos.Y }, 0xFF0000FF, 4);
+			}
+		}
+		if (cfg->game.showSunk)
+		{
+			if (hasBeenSunk)
+			{
+				FVector2D screen;
+				if (playerController->ProjectWorldLocationToScreen(ShipSinkLocation, screen))
+				{
+
+					const int dist = myLocation.DistTo(ShipSinkLocation) * 0.01f;
+					char buf[0x64];
+					snprintf(buf, sizeof(buf), "Sinking Site [%dm]", dist);
+					RenderText(drawList, buf, screen, cfg->game.sunkColor, 25);
 				}
 			}
 		}
@@ -1088,6 +1128,38 @@ void render(ImDrawList* drawList)
 					}
 				}
 			}
+
+			if (cfg->game.enable)
+			{
+				if (cfg->game.mapPins)
+				{
+					if (actor->isMapTable())
+					{
+						if (localPlayerActor->GetCurrentShip() == actor->GetParentActor())
+						{
+							auto maptable = reinterpret_cast<AMapTable*>(actor);
+							auto map_pins = maptable->MapPins;
+							for (int i = 0; i < map_pins.Count; i++)
+							{
+								FVector2D current_map_pin = map_pins[i];
+								current_map_pin *= 100.f;
+								FVector current_map_pin_world;
+								current_map_pin_world.X = current_map_pin.X;
+								current_map_pin_world.Y = current_map_pin.Y;
+								current_map_pin_world.Z = 0.f;
+								FVector2D screen;
+								if (playerController->ProjectWorldLocationToScreen(current_map_pin_world, screen))
+								{
+									const float dist = myLocation.DistTo(current_map_pin_world) * 0.01f;
+									char buf[0x64];
+									sprintf_s(buf, sizeof(buf), "Map Pin [%.0fm]", dist);
+									RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 15);
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 	if (aimBest.target != nullptr)
@@ -1142,7 +1214,7 @@ void render(ImDrawList* drawList)
 					{
 						LV = { 0.f,0.f,0.f };
 						TV = { 0.f,0.f,0.f };
-					} 
+					}
 				}
 				else
 				{

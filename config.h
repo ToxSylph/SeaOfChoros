@@ -21,7 +21,6 @@ public:
 			float crosshairThickness = 1.f;
 			ImVec4 crosshairColor = { 1.f, 1.f, 1.f, 1.f };
 			ECrosshairs crosshairType = ECrosshairs::ENone;
-			bool shipInfo = false;
 		}client;
 		struct
 		{
@@ -138,6 +137,14 @@ public:
 				bool drawPred = false;
 			}cannon;
 		}aim;
+		struct
+		{
+			bool enable = false;
+			bool shipInfo = false;
+			bool mapPins = false;
+			bool showSunk = false;
+			ImVec4 sunkColor = { 1.f, 1.f, 1.f, 1.f };
+		}game;
 		struct
 		{
 

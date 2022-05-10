@@ -262,10 +262,9 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderFloat("CH Thickness", &Config::cfg.client.crosshairThickness, 1.f, 50.f, "%.0f");
 					ImGui::ColorEdit4("CH Color", &Config::cfg.client.crosshairColor.x, 0);
 					ImGui::Combo("Crosshair Type", reinterpret_cast<int*>(&Config::cfg.client.crosshairType), crosshair, IM_ARRAYSIZE(crosshair));
-					ImGui::Checkbox("Ship Info", &Config::cfg.client.shipInfo);
 				}
 				ImGui::EndChild();
-				
+
 				ImGui::EndTabItem();
 			}
 			if (ImGui::BeginTabItem(ICON_FA_EYE "Actor ESP"))
@@ -471,10 +470,19 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				ImGui::EndTabItem();
 			}
 
-			if (ImGui::BeginTabItem(ICON_FA_WRENCH "Settings"))
+			if (ImGui::BeginTabItem(ICON_FA_GLOBE "Game"))
 			{
-				ImGui::Text("Internal Settings");
+				ImGui::Text("Global Game");
 
+				if (ImGui::BeginChild("cGame", ImVec2(0.f, 0.f), true, 0))
+				{
+					ImGui::Checkbox("Enable", &Config::cfg.game.enable);
+					ImGui::Checkbox("Ship Info", &Config::cfg.game.shipInfo);
+					ImGui::Checkbox("Map Pins", &Config::cfg.game.mapPins);
+					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
+					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
+				}
+				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
 

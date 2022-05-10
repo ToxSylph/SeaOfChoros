@@ -563,6 +563,11 @@ struct ACharacter : APawn {
 		return IsA(obj);
 	}
 
+	inline bool isMapTable() {
+		static auto obj = UObject::FindClass("Class Athena.MapTable");
+		return IsA(obj);
+	}
+
 	AHullDamage* GetHullDamage() {
 		static auto fn = UObject::FindObject<UFunction>("Function Athena.Ship.GetHullDamage");
 		AHullDamage* params = nullptr;
@@ -590,6 +595,13 @@ struct ACharacter : APawn {
 		ProcessEvent(this, fn, &params);
 		return params;
 	}
+
+	ACharacter* GetParentActor() {
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.GetParentActor");
+		ACharacter* ReturnValue;
+		ProcessEvent(this, fn, &ReturnValue);
+		return ReturnValue;
+	};
 
 	ACharacter* GetAttachParentActor() {
 		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.GetAttachParentActor");
@@ -2006,4 +2018,10 @@ struct AProjectileWeapon {
 	}
 
 
+};
+
+struct AMapTable
+{
+	char pad[0x04E8];
+	TArray<struct FVector2D> MapPins; // 0x04E8
 };
