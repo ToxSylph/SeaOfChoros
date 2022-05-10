@@ -481,6 +481,10 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Map Pins", &Config::cfg.game.mapPins);
 					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
 					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
+					ImGui::Checkbox("Ship Trajectory", &Config::cfg.game.shipTray);
+					ImGui::SliderFloat("Traj Thickness", &Config::cfg.game.shipTrayThickness, 0.f, 100.f, "%.0f");
+					ImGui::SliderFloat("Traj Height", &Config::cfg.game.shipTrayHeight, -10.f, 20.f, "%.0f");
+					ImGui::ColorEdit4("Traj Color", &Config::cfg.game.shipTrayCol.x, 0);
 				}
 				ImGui::EndChild();
 				ImGui::EndTabItem();

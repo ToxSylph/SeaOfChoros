@@ -297,10 +297,126 @@ struct AFauna {
 	FText DisplayName; // 0x0808
 };
 
+// ScriptStruct Engine.RepMovement
+// Size: 0x38 (Inherited: 0x00)
+struct FRepMovement {
+	struct FVector LinearVelocity; // 0x00(0x0c)
+	struct FVector AngularVelocity; // 0x0c(0x0c)
+	struct FVector Location; // 0x18(0x0c)
+	struct FRotator Rotation; // 0x24(0x0c)
+	char bSimulatedPhysicSleep : 1; // 0x30(0x01)
+	char bRepPhysics : 1; // 0x30(0x01)
+	char UnknownData_30_2 : 6; // 0x30(0x01)
+	char LocationQuantizationLevel; // 0x31(0x01)
+	char VelocityQuantizationLevel; // 0x32(0x01)
+	char RotationQuantizationLevel; // 0x33(0x01)
+	char UnknownData_34[0x4]; // 0x34(0x04)
+};
+
 // Class Engine.Actor
 // Size: 0x3d0 (Inherited: 0x28)
 struct AActor : UObject {
-	char pad[0x3A8];
+	char PrimaryActorTick[0x50]; // 0x28(0x50)
+	float CustomTimeDilation; // 0x78(0x04)
+	char bAllowRemovalFromServerWhenCollisionMerged : 1; // 0x7c(0x01)
+	char bAllowRemovalFromServerWhenAutomaticallyInstanced : 1; // 0x7c(0x01)
+	char bHidden : 1; // 0x7c(0x01)
+	char bNetTemporary : 1; // 0x7c(0x01)
+	char bNetStartup : 1; // 0x7c(0x01)
+	char bOnlyRelevantToOwner : 1; // 0x7c(0x01)
+	char bAlwaysRelevant : 1; // 0x7c(0x01)
+	char bReplicateMovement : 1; // 0x7c(0x01)
+	char bTearOff : 1; // 0x7d(0x01)
+	char bExchangedRoles : 1; // 0x7d(0x01)
+	char bPendingNetUpdate : 1; // 0x7d(0x01)
+	char bNetLoadOnClient : 1; // 0x7d(0x01)
+	char bNetUseOwnerRelevancy : 1; // 0x7d(0x01)
+	char bBlockInput : 1; // 0x7d(0x01)
+	char UnknownData_7D_6 : 1; // 0x7d(0x01)
+	char bCanBeInCluster : 1; // 0x7d(0x01)
+	char UnknownData_7E_0 : 2; // 0x7e(0x01)
+	char bActorEnableCollision : 1; // 0x7e(0x01)
+	char UnknownData_7E_3 : 1; // 0x7e(0x01)
+	char bReplicateAttachment : 1; // 0x7e(0x01)
+	char UnknownData_7E_5 : 1; // 0x7e(0x01)
+	char bReplicates : 1; // 0x7e(0x01)
+	char UnknownData_7F[0x1]; // 0x7f(0x01)
+	char OnPreNetOwnershipChange[0x1]; // 0x80(0x01)
+	char UnknownData_81[0x1]; // 0x81(0x01)
+	char RemoteRole; // 0x82(0x01)
+	char UnknownData_83[0x5]; // 0x83(0x05)
+	struct AActor* Owner; // 0x88(0x08)
+	char SpawnRestrictions; // 0x90(0x01)
+	char UnknownData_91[0x3]; // 0x91(0x03)
+	struct FRepMovement ReplicatedMovement; // 0x94(0x38)
+	char UnknownData_CC[0x4]; // 0xcc(0x04)
+	char AttachmentReplication[0x48]; // 0xd0(0x48)
+	char Role; // 0x118(0x01)
+	char UnknownData_119[0x1]; // 0x119(0x01)
+	char AutoReceiveInput; // 0x11a(0x01)
+	char UnknownData_11B[0x1]; // 0x11b(0x01)
+	int32_t InputPriority; // 0x11c(0x04)
+	struct UInputComponent* InputComponent; // 0x120(0x08)
+	float NetCullDistanceSquared; // 0x128(0x04)
+	char UnknownData_12C[0x4]; // 0x12c(0x04)
+	int32_t NetTag; // 0x130(0x04)
+	float NetUpdateTime; // 0x134(0x04)
+	float NetUpdateFrequency; // 0x138(0x04)
+	float NetPriority; // 0x13c(0x04)
+	float LastNetUpdateTime; // 0x140(0x04)
+	struct FName NetDriverName; // 0x144(0x08)
+	char bAutoDestroyWhenFinished : 1; // 0x14c(0x01)
+	char bCanBeDamaged : 1; // 0x14c(0x01)
+	char bActorIsBeingDestroyed : 1; // 0x14c(0x01)
+	char bCollideWhenPlacing : 1; // 0x14c(0x01)
+	char bFindCameraComponentWhenViewTarget : 1; // 0x14c(0x01)
+	char bRelevantForNetworkReplays : 1; // 0x14c(0x01)
+	char UnknownData_14C_6 : 2; // 0x14c(0x01)
+	char UnknownData_14D[0x3]; // 0x14d(0x03)
+	char SpawnCollisionHandlingMethod; // 0x150(0x01)
+	char UnknownData_151[0x7]; // 0x151(0x07)
+	struct APawn* Instigator; // 0x158(0x08)
+	struct TArray<struct AActor*> Children; // 0x160(0x10)
+	struct USceneComponent* RootComponent; // 0x170(0x08)
+	struct TArray<struct AMatineeActor*> ControllingMatineeActors; // 0x178(0x10)
+	float InitialLifeSpan; // 0x188(0x04)
+	char UnknownData_18C[0x4]; // 0x18c(0x04)
+	char bAllowReceiveTickEventOnDedicatedServer : 1; // 0x190(0x01)
+	char UnknownData_190_1 : 7; // 0x190(0x01)
+	char UnknownData_191[0x7]; // 0x191(0x07)
+	struct TArray<struct FName> Layers; // 0x198(0x10)
+	char ParentComponentActor[0x8]; // 0x1a8(0x08)
+	struct TArray<struct AActor*> ChildComponentActors; // 0x1b0(0x10)
+	char UnknownData_1C0[0x8]; // 0x1c0(0x08)
+	char bActorSeamlessTraveled : 1; // 0x1c8(0x01)
+	char bIgnoresOriginShifting : 1; // 0x1c8(0x01)
+	char bEnableAutoLODGeneration : 1; // 0x1c8(0x01)
+	char InvertFeatureCheck : 1; // 0x1c8(0x01)
+	char UnknownData_1C8_4 : 4; // 0x1c8(0x01)
+	char UnknownData_1C9[0x3]; // 0x1c9(0x03)
+	struct FName Feature; // 0x1cc(0x08)
+	char UnknownData_1D4[0x4]; // 0x1d4(0x04)
+	struct TArray<struct FName> Tags; // 0x1d8(0x10)
+	uint64_t HiddenEditorViews; // 0x1e8(0x08)
+	char UnknownData_1F0[0x4]; // 0x1f0(0x04)
+	char UnknownData_1F4[0x3c]; // 0x1f4(0x3c)
+	char OnEndPlay[0x1]; // 0x230(0x01)
+	bool bDoOverlapNotifiesOnLoad; // 0x231(0x01)
+	char UnknownData_232[0xf6]; // 0x232(0xf6)
+	struct TArray<struct UActorComponent*> BlueprintCreatedComponents; // 0x328(0x10)
+	struct TArray<struct UActorComponent*> InstanceComponents; // 0x338(0x10)
+	char UnknownData_348[0x8]; // 0x348(0x08)
+	struct TArray<struct AActor*> ChildActorInterfaceProviders; // 0x350(0x10)
+	char UnknownData_360[0x68]; // 0x360(0x68)
+	double DormancyLingeringInSeconds; // 0x3c8(0x08)
+
+	struct FVector GetActorRightVector()
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.Actor.GetActorRightVector");
+		FVector ReturnValue;
+		ProcessEvent(this, fn, &ReturnValue);
+		return ReturnValue;
+	}
 };
 
 // Class Engine.Pawn
@@ -1780,6 +1896,45 @@ enum class ETraceTypeQuery : uint8_t
 	TraceTypeQuery32 = 31,
 	TraceTypeQuery_MAX = 32,
 	ETraceTypeQuery_MAX = 33
+};
+
+
+class UKismetSystemLibrary {
+private:
+	static inline UClass* defaultObj;
+public:
+	static bool Init() {
+		return defaultObj = UObject::FindObject<UClass>("Class Engine.KismetSystemLibrary");
+	}
+
+	static FRotator DrawDebugCircle(struct UObject* WorldContextObject, struct FVector Center, float Radius, int32_t NumSegments, struct FLinearColor LineColor, float Duration, float Thickness, struct FVector YAxis, struct FVector ZAxis, bool bDrawAxis) {
+		static auto fn = UObject::FindObject<UFunction>("Function Engine.KismetSystemLibrary.DrawDebugCircle");
+
+		struct {
+			struct UObject* WorldContextObject;
+			struct FVector Center;
+			float Radius;
+			int32_t NumSegments;
+			struct FLinearColor LineColor;
+			float Duration;
+			float Thickness;
+			struct FVector YAxis;
+			struct FVector ZAxis;
+			bool bDrawAxis;
+		} params;
+		params.WorldContextObject = WorldContextObject;
+		params.Center = Center;
+		params.Radius = Radius;
+		params.NumSegments = NumSegments;
+		params.LineColor = LineColor;
+		params.Duration = Duration;
+		params.Thickness = Thickness;
+		params.YAxis = YAxis;
+		params.ZAxis = ZAxis;
+		params.bDrawAxis = bDrawAxis;
+
+		ProcessEvent(defaultObj, fn, &params);
+	}
 };
 
 class UKismetMathLibrary {

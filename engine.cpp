@@ -1159,6 +1159,39 @@ void render(ImDrawList* drawList)
 						}
 					}
 				}
+				// @Craftexperts
+				if (cfg->game.shipTray)
+				{
+					if (actor->isShip())
+					{
+						try
+						{
+							//if (actor == localPlayerActor->GetCurrentShip())
+							//{
+							AActor* ship = reinterpret_cast<AActor*>(actor);
+							auto angular_velocity = ship->ReplicatedMovement.AngularVelocity;
+							auto tangential_velocity = ship->ReplicatedMovement.LinearVelocity;
+							tangential_velocity.Z = 0;
+							auto speed = FVector(tangential_velocity.X, tangential_velocity.Y, 0).Size();
+
+							float const pi = 3.14159f;
+							auto yaw_degrees = FVector(0, 0, angular_velocity.Z).Size();
+							auto yaw_radians = (yaw_degrees * pi) / 180;
+
+							auto turn_radius = speed / yaw_radians;
+							bool left = angular_velocity.Z > 0.f;
+							auto right = ship->GetActorRightVector(); right.Z = 0;
+							auto rotated_center_unit = left ? right : right * -1;
+							auto actor_location = actor->K2_GetActorLocation();
+							actor_location.Z += cfg->game.shipTrayHeight * 100.f;
+							auto center_of_rotation = (rotated_center_unit * turn_radius) + actor_location;
+							FLinearColor color = FLinearColor(cfg->game.shipTrayCol.x, cfg->game.shipTrayCol.y, cfg->game.shipTrayCol.z, cfg->game.shipTrayCol.w);
+							UKismetSystemLibrary::DrawDebugCircle(ship, center_of_rotation, turn_radius, 180, color, 0.f, cfg->game.shipTrayThickness, { 1,0,0 }, { 0,1,0 }, false);
+
+							//}
+						}catch(...){}
+					}
+				}
 			}
 		}
 	}
@@ -1547,6 +1580,8 @@ bool checkSDKObjects()
 	tslog::verbose("UCrewFunctions - Ready.");
 	if (!UKismetMathLibrary::Init()) return false;
 	tslog::verbose("UKismetMathLibrary - Ready.");
+	if (!UKismetSystemLibrary::Init()) return false;
+	tslog::verbose("UKismetSystemLibrary - Ready.");
 	return true;
 }
 

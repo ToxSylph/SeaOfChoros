@@ -144,6 +144,10 @@ public:
 			bool mapPins = false;
 			bool showSunk = false;
 			ImVec4 sunkColor = { 1.f, 1.f, 1.f, 1.f };
+			bool shipTray = false;
+			float shipTrayThickness = 0.f;
+			float shipTrayHeight = 0.f;
+			ImVec4 shipTrayCol = { 1.f, 1.f, 1.f, 1.f };
 		}game;
 		struct
 		{
