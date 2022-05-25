@@ -83,7 +83,7 @@ void tslog::verbose(const char* text, ...)
 		{
 			char buffer[256];
 			va_buffer(args, text, buffer);
-			std::cout << "[LOG_VERBOSE]: " << buffer << std::endl;
+			std::cout << "[VERBOSE]: " << buffer << std::endl;
 		}
 }
 

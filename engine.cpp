@@ -111,552 +111,759 @@ using namespace engine;
 
 void render(ImDrawList* drawList)
 {
-	static struct {
-		ACharacter* target = nullptr;
-		FVector location = FVector(0.f, 0.f, 0.f);
-		FRotator delta = FRotator(0.f, 0.f, 0.f);
-		float best = FLT_MAX;
-		float smoothness = 1.f;
-	} aimBest;
-	aimBest.target = nullptr;
-	aimBest.best = FLT_MAX;
-
-	auto& io = ImGui::GetIO();
-	auto const world = *UWorld::GWorld;
-	const auto myLocation = localPlayerActor->K2_GetActorLocation();
-	const auto camera = ((AController*)playerController)->PlayerCameraManager;
-	const auto cameraLocation = camera->GetCameraLocation();
-	const auto cameraRotation = camera->GetCameraRotation();
-	auto item = localPlayerActor->GetWieldedItem();
-
-	bool isWieldedWeapon = false;
-	if (item) isWieldedWeapon = item->isWeapon();
-
-	const auto localSword = *reinterpret_cast<AMeleeWeapon**>(&item);
-	const auto localWeapon = *reinterpret_cast<AProjectileWeapon**>(&item);
-	ACharacter* attachObject = localPlayerActor->GetAttachParentActor();
-
-
-	int XMarksMapCount = 1;
-
-	TArray<ULevel*> levels = AthenaGameViewportClient->World->Levels;
-
-	if (cfg->client.enable)
+	static int error_code = 0;
+	try
 	{
-		static std::uintptr_t desiredTimeFOV = 0;
-		if (milliseconds_now() >= desiredTimeFOV)
-		{
-			float fov = localPlayerActor->GetTargetFOV(localPlayerActor);
-			playerController->FOV(cfg->client.fov);
-			if (fov == 17.f)
-			{
-				playerController->FOV(cfg->client.fov * 0.2f);
-			}
-			desiredTimeFOV = milliseconds_now() + 100;
-		}
+		error_code = 1;
+		static struct {
+			ACharacter* target = nullptr;
+			FVector location = FVector(0.f, 0.f, 0.f);
+			FRotator delta = FRotator(0.f, 0.f, 0.f);
+			float best = FLT_MAX;
+			float smoothness = 1.f;
+		} aimBest;
+		aimBest.target = nullptr;
+		aimBest.best = FLT_MAX;
 
-		if (cfg->client.oxygen && localPlayerActor->IsInWater())
+		error_code = 2;
+		auto& io = ImGui::GetIO();
+		auto const world = *UWorld::GWorld;
+		auto const gameState = world->GameState;
+		const auto myLocation = localPlayerActor->K2_GetActorLocation();
+		const auto camera = ((AController*)playerController)->PlayerCameraManager;
+		const auto cameraLocation = camera->GetCameraLocation();
+		const auto cameraRotation = camera->GetCameraRotation();
+		auto item = localPlayerActor->GetWieldedItem();
+
+		bool isWieldedWeapon = false;
+		bool isWieldedSpyglass = false;
+		if (item) isWieldedWeapon = item->isWeapon();
+		if (item) isWieldedSpyglass = item->isSpyglass();
+
+		const auto localSword = *reinterpret_cast<AMeleeWeapon**>(&item);
+		const auto localWeapon = *reinterpret_cast<AProjectileWeapon**>(&item);
+		ACharacter* attachObject = localPlayerActor->GetAttachParentActor();
+
+
+		int XMarksMapCount = 1;
+
+		TArray<ULevel*> levels = AthenaGameViewportClient->World->Levels;
+
+		error_code = 3;
+
+		if (cfg->client.enable)
 		{
-			auto drownComp = localPlayerActor->DrowningComponent;
-			if (drownComp)
+			if (cfg->client.fovEnable)
 			{
-				float level = drownComp->GetOxygenLevel();
-				auto posX = io.DisplaySize.x * 0.5f;
-				auto posY = io.DisplaySize.y * 0.85f;
-				auto barWidth = io.DisplaySize.x * 0.05f;
-				auto barHeight = io.DisplaySize.y * 0.0030f;
-				drawList->AddRectFilled({ posX - barWidth, posY - barHeight }, { posX + barWidth, posY + barHeight }, ImGui::GetColorU32(IM_COL32(0, 0, 0, 255)));
-				drawList->AddRectFilled({ posX - barWidth, posY - barHeight }, { posX - barWidth + barWidth * level * 2.f, posY + barHeight }, ImGui::GetColorU32(IM_COL32(0, 200, 255, 255)));
-				char buf[0x64];
-				float pLevel = level * 100.f;
-				sprintf_s(buf, sizeof(buf), "[ %.0f%% ]", pLevel);
-				auto oxColor = level > 0.25f ? ImVec4(0.f, 1.f, 0.f, 1.f) : ImVec4(1.f, 0.f, 0.f, 1.f);
-				RenderText(drawList, buf, FVector2D(posX + (barWidth * 0.5f), posY + barHeight + 10.f), oxColor, 20);
-			}
-		}
-		if (cfg->client.crosshair)
-		{
-			switch (cfg->client.crosshairType)
-			{
-			case Config::Configuration::ECrosshairs::ENone:
-				break;
-			case Config::Configuration::ECrosshairs::ECircle:
-				drawList->AddCircle({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f }, cfg->client.crosshairSize, ImGui::GetColorU32(cfg->client.crosshairColor), 0, cfg->client.crosshairThickness);
-				break;
-			case Config::Configuration::ECrosshairs::ECross:
-				drawList->AddLine({ io.DisplaySize.x * 0.5f - cfg->client.crosshairSize, io.DisplaySize.y * 0.5f }, { io.DisplaySize.x * 0.5f + cfg->client.crosshairSize, io.DisplaySize.y * 0.5f }, ImGui::GetColorU32(cfg->client.crosshairColor), cfg->client.crosshairThickness);
-				drawList->AddLine({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f - cfg->client.crosshairSize }, { io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f + cfg->client.crosshairSize }, ImGui::GetColorU32(cfg->client.crosshairColor), cfg->client.crosshairThickness);
-				break;
-			default:
-				break;
-			}
-		}
-	}
-	if (cfg->esp.enable)
-	{
-		if (cfg->esp.islands.enable)
-		{
-			const auto entries = AthenaGameViewportClient->World->GameState->IslandService->IslandDataAsset->IslandDataEntries;
-			for (auto i = 0u; i < entries.Count; i++)
-			{
-				auto const island = entries[i];
-				auto const WorldMapData = island->WorldMapData;
-				if (!WorldMapData) continue;
-				const FVector islandLoc = WorldMapData->CaptureParams.WorldSpaceCameraPosition;
-				const float dist = myLocation.DistTo(islandLoc) * 0.01f;
-				if ((islandLoc.DistTo(FVector(0.f, 0.f, 0.f)) * 0.01) < 50.f) continue; // Conflictive Islands merging at 0.0.0 World Pos
-				if (dist > cfg->esp.islands.renderDistance) continue;
-				FVector2D screen;
-				if (playerController->ProjectWorldLocationToScreen(islandLoc, screen))
+				error_code = 4;
+				static std::uintptr_t desiredTimeFOV = 0;
+				if (milliseconds_now() >= desiredTimeFOV)
 				{
+					float fov = localPlayerActor->GetTargetFOV(localPlayerActor);
+					playerController->FOV(cfg->client.fov);
+					if (fov == 17.f)
+					{
+						playerController->FOV(cfg->client.fov * 0.2f);
+					}
+					if (isWieldedSpyglass && GetAsyncKeyState(VK_LBUTTON))
+					{
+						playerController->FOV(cfg->client.fov * (1 / cfg->client.spyglassFovMul));
+					}
+					desiredTimeFOV = milliseconds_now() + 100;
+				}
+			}
+
+			if (cfg->client.oxygen && localPlayerActor->IsInWater())
+			{
+				error_code = 5;
+				auto drownComp = localPlayerActor->DrowningComponent;
+				if (drownComp)
+				{
+					float level = drownComp->GetOxygenLevel();
+					auto posX = io.DisplaySize.x * 0.5f;
+					auto posY = io.DisplaySize.y * 0.85f;
+					auto barWidth = io.DisplaySize.x * 0.05f;
+					auto barHeight = io.DisplaySize.y * 0.0030f;
+					drawList->AddRectFilled({ posX - barWidth, posY - barHeight }, { posX + barWidth, posY + barHeight }, ImGui::GetColorU32(IM_COL32(0, 0, 0, 255)));
+					drawList->AddRectFilled({ posX - barWidth, posY - barHeight }, { posX - barWidth + barWidth * level * 2.f, posY + barHeight }, ImGui::GetColorU32(IM_COL32(0, 200, 255, 255)));
 					char buf[0x64];
-					auto len = island->LocalisedName->multi(buf, 0x50);
-					sprintf_s(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
-					RenderText(drawList, buf, screen, cfg->esp.islands.color, (int)cfg->esp.islands.size + 10);
+					float pLevel = level * 100.f;
+					sprintf_s(buf, sizeof(buf), "[ %.0f%% ]", pLevel);
+					auto oxColor = level > 0.25f ? ImVec4(0.f, 1.f, 0.f, 1.f) : ImVec4(1.f, 0.f, 0.f, 1.f);
+					RenderText(drawList, buf, FVector2D(posX + (barWidth * 0.5f), posY + barHeight + 10.f), oxColor, 20);
+				}
+			}
+			if (cfg->client.crosshair)
+			{
+				error_code = 6;
+				switch (cfg->client.crosshairType)
+				{
+				case Config::Configuration::ECrosshairs::ENone:
+					break;
+				case Config::Configuration::ECrosshairs::ECircle:
+					drawList->AddCircle({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f }, cfg->client.crosshairSize, ImGui::GetColorU32(cfg->client.crosshairColor), 0, cfg->client.crosshairThickness);
+					break;
+				case Config::Configuration::ECrosshairs::ECross:
+					drawList->AddLine({ io.DisplaySize.x * 0.5f - cfg->client.crosshairSize, io.DisplaySize.y * 0.5f }, { io.DisplaySize.x * 0.5f + cfg->client.crosshairSize, io.DisplaySize.y * 0.5f }, ImGui::GetColorU32(cfg->client.crosshairColor), cfg->client.crosshairThickness);
+					drawList->AddLine({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f - cfg->client.crosshairSize }, { io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f + cfg->client.crosshairSize }, ImGui::GetColorU32(cfg->client.crosshairColor), cfg->client.crosshairThickness);
+					break;
+				default:
+					break;
 				}
 			}
 		}
-	}
-	if (cfg->aim.enable)
-	{
-		if (cfg->aim.cannon.enable && attachObject && attachObject->isCannon())
+		if (cfg->esp.enable)
 		{
-			auto cannon = reinterpret_cast<ACannon*>(attachObject);
-			float gravity_scale = cannon->ProjectileGravityScale;
-			int localsets = 0;
-			if (cfg->aim.cannon.drawPred)
+			if (cfg->esp.islands.enable)
 			{
-				float gravity = 981.f * gravity_scale;
-				float launchspeed = cannon->ProjectileSpeed;
-				FRotator angle = { cannon->ServerPitch, cannon->ServerYaw, 0.f };
-				FRotator comp_angle = attachObject->K2_GetActorRotation();
-				angle += comp_angle;
-				FVector vForward = UKismetMathLibrary::Conv_RotatorToVector(angle);
-				FVector pos = attachObject->K2_GetActorLocation();
-				pos.Z += 100;
-				pos = pos + (vForward * 150);
-				FVector vel = vForward * launchspeed;
-				if (localPlayerActor->GetCurrentShip())
-					vel = vel + localPlayerActor->GetCurrentShip()->GetVelocity();
-				std::vector<FVector> path;
-				int count = 250;
-				//bool hit = GetProjectilePath(path, vel, pos, gravity, count, world);
-				bool hit = GetProjectilePath(path, vel, pos, gravity, count, world);
-				FVector2D screen_pos_prev;
-				for (int i = 0; i < path.size(); i++)
+				error_code = 7;
+				const auto entries = AthenaGameViewportClient->World->GameState->IslandService->IslandDataAsset->IslandDataEntries;
+				for (auto i = 0u; i < entries.Count; i++)
 				{
-					FVector2D screen_pos;
-					bool is_on_screen = playerController->ProjectWorldLocationToScreen(path[i], screen_pos);
-					if (is_on_screen) {
-						if (hit && i == path.size() - 1)
-						{
-							drawList->AddCircle({ screen_pos.X, screen_pos.Y }, 7, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 1.f, 0.f, 1.f)), 9, 1);
-						}
-						else if (i >= 1)
-							drawList->AddLine({ screen_pos_prev.X, screen_pos_prev.Y }, { screen_pos.X, screen_pos.Y }, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 0.f, 1.f)), 1);
-						screen_pos_prev = screen_pos;
+					error_code = 8;
+					auto const island = entries[i];
+					auto const WorldMapData = island->WorldMapData;
+					if (!WorldMapData) continue;
+					const FVector islandLoc = WorldMapData->CaptureParams.WorldSpaceCameraPosition;
+					const float dist = myLocation.DistTo(islandLoc) * 0.01f;
+					if ((islandLoc.DistTo(FVector(0.f, 0.f, 0.f)) * 0.01) < 50.f) continue; // Conflictive Islands merging at 0.0.0 World Pos
+					if (dist > cfg->esp.islands.renderDistance) continue;
+					FVector2D screen;
+					if (playerController->ProjectWorldLocationToScreen(islandLoc, screen))
+					{
+						char buf[0x64];
+						auto len = island->LocalisedName->multi(buf, 0x50);
+						sprintf_s(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
+						RenderText(drawList, buf, screen, cfg->esp.islands.color, (int)cfg->esp.islands.size + 10);
 					}
 				}
 			}
 		}
-	}
-	static FVector ShipSinkLocation;
-	static bool hasBeenSunk = false;
-	static bool justSunked = false;
-	auto ship = localPlayerActor->GetCurrentShip();
-
-	if (ship)
-	{
-		if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 == 100.f)
+		if (cfg->aim.enable)
 		{
-			if (!justSunked)
+			if (cfg->aim.cannon.enable && attachObject && attachObject->isCannon())
 			{
-				ShipSinkLocation = ship->K2_GetActorLocation();
-				justSunked = true;
-				hasBeenSunk = true;
-			}
-		}
-		else if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 != 100)
-		{
-			justSunked = false;
-		}
-
-	}
-	if (cfg->game.enable)
-	{
-		if (cfg->game.shipInfo)
-		{
-			auto ship = localPlayerActor->GetCurrentShip();
-			if (ship)
-			{
-				FVector velocity = ship->GetVelocity() / 100.f;
-				char buf[0xFF];
-				FVector2D pos{ 10.f, 45.f };
-				ImVec4 col{ 1.f,1.f,1.f,1.f };
-				auto speed = velocity.Size();
-				sprintf_s(buf, "Speed: %.0fm/s", speed);
-				pos.Y += 5.f;
-				RenderText(drawList, buf, pos, col, 20, false);
-				int holes = ship->GetHullDamage()->ActiveHullDamageZones.Count;
-				sprintf_s(buf, "Holes: %d", holes);
-				pos.Y += 20.f;
-				RenderText(drawList, buf, pos, col, 20, false);
-				int amount = 0;
-				auto water = ship->GetInternalWater();
-				if (water) amount = water->GetNormalizedWaterAmount() * 100.f;
-				sprintf_s(buf, "Water: %d%%", amount);
-				pos.Y += 20.f;
-				RenderText(drawList, buf, pos, col, 20, false);
-				pos.Y += 22.f;
-				float internal_water_percent = ship->GetInternalWater()->GetNormalizedWaterAmount();
-				drawList->AddLine({ pos.X - 1, pos.Y }, { pos.X + 100 + 1, pos.Y }, 0xFF000000, 6);
-				drawList->AddLine({ pos.X, pos.Y }, { pos.X + 100, pos.Y }, 0xFF00FF00, 4);
-				drawList->AddLine({ pos.X, pos.Y }, { pos.X + (100.f * internal_water_percent), pos.Y }, 0xFF0000FF, 4);
-			}
-		}
-		if (cfg->game.showSunk)
-		{
-			if (hasBeenSunk)
-			{
-				FVector2D screen;
-				if (playerController->ProjectWorldLocationToScreen(ShipSinkLocation, screen))
+				error_code = 801;
+				if (GetAsyncKeyState(VK_F5) & 1)
 				{
+					if (cfg->aim.cannon.chains)
+					{
+						cfg->aim.cannon.chains = false;
+					}
+					else
+					{
+						cfg->aim.cannon.chains = true;
+						cfg->aim.cannon.deckshots = false;
+					}
+				}
+				if (GetAsyncKeyState(VK_F6) & 1)
+				{
+					if (cfg->aim.cannon.deckshots)
+					{
+						cfg->aim.cannon.deckshots = false;
+					}
+					else
+					{
+						cfg->aim.cannon.deckshots = true;
+						cfg->aim.cannon.chains = false;
+					}
+				}
+				if (GetAsyncKeyState(VK_F8) & 1)
+				{
+					cfg->aim.cannon.lowAim != cfg->aim.cannon.lowAim;
+				}
 
-					const int dist = myLocation.DistTo(ShipSinkLocation) * 0.01f;
-					char buf[0x64];
-					snprintf(buf, sizeof(buf), "Sinking Site [%dm]", dist);
-					RenderText(drawList, buf, screen, cfg->game.sunkColor, 25);
+				int cannonlocalsets = 0;
+
+				if (cfg->aim.cannon.players)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f), ImColor(0, 0, 0, 255), "Player Cannon Aimbot", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 323.f), ImColor(0, 255, 0, 255), "Player Cannon Aimbot", 0, 0.0f, 0);
+					cannonlocalsets++;
+				}
+				if (cfg->aim.cannon.skeletons)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 0, 0, 255), "Skeleton Aimbot", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 323.f + (float)(cannonlocalsets * 20)), ImColor(0, 255, 0, 255), "Skeleton Aimbot", 0, 0.0f, 0);
+					cannonlocalsets++;
+				}
+				if (cfg->aim.cannon.chains)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 0, 0, 255), "Chain Aimbot", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 255, 0, 255), "Chain Aimbot", 0, 0.0f, 0);
+					cannonlocalsets++;
+				}
+				if (cfg->aim.cannon.deckshots)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 0, 0, 255), "Deck Shots", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 255, 0, 255), "Deck Shots", 0, 0.0f, 0);
+					cannonlocalsets++;
+				}
+				if (cfg->aim.cannon.visibleOnly)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 0, 0, 255), "Visible Only", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 255, 0, 255), "Visible Only", 0, 0.0f, 0);
+					cannonlocalsets++;
+				}
+				if (cfg->aim.cannon.instant)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 0, 0, 255), "Instant Shoot", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 255, 0, 255), "Instant Shoot", 0, 0.0f, 0);
+					cannonlocalsets++;
+				}
+				if (cfg->aim.cannon.ghostShips)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 0, 0, 255), "Ghost Ships", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 255, 0, 255), "Ghost Ships", 0, 0.0f, 0);
+					cannonlocalsets++;
+				}
+				if (cfg->aim.cannon.lowAim)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 0, 0, 255), "Low Aim", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(cannonlocalsets * 20)), ImColor(0, 255, 0, 255), "Low Aim", 0, 0.0f, 0);
+				}
+
+				error_code = 9;
+				auto cannon = reinterpret_cast<ACannon*>(attachObject);
+				float gravity_scale = cannon->ProjectileGravityScale;
+				int localsets = 0;
+				if (cfg->aim.cannon.drawPred)
+				{
+					float gravity = 981.f * gravity_scale;
+					float launchspeed = cannon->ProjectileSpeed;
+					FRotator angle = { cannon->ServerPitch, cannon->ServerYaw, 0.f };
+					FRotator comp_angle = attachObject->K2_GetActorRotation();
+					angle += comp_angle;
+					FVector vForward = UKismetMathLibrary::Conv_RotatorToVector(angle);
+					FVector pos = attachObject->K2_GetActorLocation();
+					pos.Z += 100;
+					pos = pos + (vForward * 150);
+					FVector vel = vForward * launchspeed;
+					if (localPlayerActor->GetCurrentShip())
+						vel = vel + localPlayerActor->GetCurrentShip()->GetVelocity();
+					std::vector<FVector> path;
+					int count = 250;
+					//bool hit = GetProjectilePath(path, vel, pos, gravity, count, world);
+					bool hit = GetProjectilePath(path, vel, pos, gravity, count, world);
+					FVector2D screen_pos_prev;
+					for (int i = 0; i < path.size(); i++)
+					{
+						FVector2D screen_pos;
+						bool is_on_screen = playerController->ProjectWorldLocationToScreen(path[i], screen_pos);
+						if (is_on_screen) {
+							if (hit && i == path.size() - 1)
+							{
+								drawList->AddCircle({ screen_pos.X, screen_pos.Y }, 7, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 1.f, 0.f, 1.f)), 9, 1);
+							}
+							else if (i >= 1)
+								drawList->AddLine({ screen_pos_prev.X, screen_pos_prev.Y }, { screen_pos.X, screen_pos.Y }, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 0.f, 1.f)), 1);
+							screen_pos_prev = screen_pos;
+						}
+					}
+				}
+			}
+			if (isWieldedWeapon)
+			{
+				int localsets = 0;
+				if (cfg->aim.weapon.trigger)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Instant Shoot + FR", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Instant Shoot + FR", 0, 0.0f, 0);
+					localsets++;
+				}
+				if (cfg->aim.weapon.visibleOnly)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Visible Only", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Visible Only", 0, 0.0f, 0);
+					localsets++;
+				}
+				if (cfg->aim.weapon.players)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Player Aimbot", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Player Aimbot", 0, 0.0f, 0);
+					localsets++;
+				}
+				if (cfg->aim.weapon.skeletons)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Skeletons Aimbot", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Skeletons Aimbot", 0, 0.0f, 0);
+					localsets++;
+				}
+				if (cfg->aim.weapon.kegs)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
+					localsets++;
+				}
+				if (cfg->aim.weapon.calcShipVel)
+				{
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Calculate Ships Velocity", 0, 0.0f, 0);
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Calculate Ships Velocity", 0, 0.0f, 0);
+				}
+				if (ImGui::IsKeyPressed(VK_F8))
+				{
+					cfg->aim.weapon.calcShipVel != cfg->aim.weapon.calcShipVel;
 				}
 			}
 		}
-	}
-
-	for (UINT32 i = 0; i < levels.Count; i++)
-	{
-		if (!levels[i])
-			continue;
-		TArray<ACharacter*> actors = levels[i]->AActors;
-		for (UINT32 j = 0; j < actors.Count; j++)
+		if (cfg->game.enable)
 		{
-			ACharacter* actor = actors[j];
-			if (!actor)
+			if (cfg->game.shipInfo)
+			{
+				error_code = 10;
+				auto ship = localPlayerActor->GetCurrentShip();
+				if (ship)
+				{
+					FVector velocity = ship->GetVelocity() / 100.f;
+					char buf[0xFF];
+					FVector2D pos{ 10.f, 45.f };
+					ImVec4 col{ 1.f,1.f,1.f,1.f };
+					auto speed = velocity.Size();
+					sprintf_s(buf, "Speed: %.0fm/s", speed);
+					pos.Y += 5.f;
+					RenderText(drawList, buf, pos, col, 20, false);
+					int holes = ship->GetHullDamage()->ActiveHullDamageZones.Count;
+					sprintf_s(buf, "Holes: %d", holes);
+					pos.Y += 20.f;
+					RenderText(drawList, buf, pos, col, 20, false);
+					int amount = 0;
+					auto water = ship->GetInternalWater();
+					if (water) amount = water->GetNormalizedWaterAmount() * 100.f;
+					sprintf_s(buf, "Water: %d%%", amount);
+					pos.Y += 20.f;
+					RenderText(drawList, buf, pos, col, 20, false);
+					pos.Y += 22.f;
+					float internal_water_percent = ship->GetInternalWater()->GetNormalizedWaterAmount();
+					drawList->AddLine({ pos.X - 1, pos.Y }, { pos.X + 100 + 1, pos.Y }, 0xFF000000, 6);
+					drawList->AddLine({ pos.X, pos.Y }, { pos.X + 100, pos.Y }, 0xFF00FF00, 4);
+					drawList->AddLine({ pos.X, pos.Y }, { pos.X + (100.f * internal_water_percent), pos.Y }, 0xFF0000FF, 4);
+				}
+			}
+			if (cfg->game.showSunk)
+			{
+				error_code = 11;
+				static FVector ShipSinkLocation;
+				static bool hasBeenSunk = false;
+				static bool justSunked = false;
+				auto ship = localPlayerActor->GetCurrentShip();
+
+				if (ship)
+				{
+					if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 == 100.f)
+					{
+						if (!justSunked)
+						{
+							ShipSinkLocation = ship->K2_GetActorLocation();
+							justSunked = true;
+							hasBeenSunk = true;
+						}
+					}
+					else if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 != 100)
+					{
+						justSunked = false;
+					}
+
+				}
+				if (hasBeenSunk)
+				{
+					FVector2D screen;
+					if (playerController->ProjectWorldLocationToScreen(ShipSinkLocation, screen))
+					{
+
+						const int dist = myLocation.DistTo(ShipSinkLocation) * 0.01f;
+						char buf[0x64];
+						snprintf(buf, sizeof(buf), "Sinking Site [%dm]", dist);
+						RenderText(drawList, buf, screen, cfg->game.sunkColor, 25);
+					}
+				}
+			}
+			if (cfg->game.playerList)
+			{
+				try
+				{
+					ImGui::PopStyleColor();
+					ImGui::PopStyleVar(2);
+					ImGui::SetNextWindowSize(ImVec2(335.f, 700.f), ImGuiCond_Once);
+					ImGui::SetNextWindowPos(ImVec2(10.f, 180.f), ImGuiCond_Once);
+					ImGui::Begin("PlayersList", 0, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_AlwaysAutoResize | ImGuiColumnsFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar);
+					auto shipsService = gameState->ShipService;
+					if (shipsService)
+					{
+						ImGui::BeginChild("Info", { 0.f, 18.f });
+						ImGui::Text("Server Player List | Total Ships (Including AI): %d", shipsService->GetNumShips());
+						ImGui::EndChild();
+					}
+					auto crewService = gameState->CrewService;
+					auto crews = crewService->Crews;
+					if (crews.Data)
+					{
+						ImGui::Separator();
+						ImGui::Text("Name"); ImGui::NextColumn();
+						ImGui::Separator();
+						for (uint32_t i = 0; i < crews.Count; i++)
+						{
+							auto& crew = crews[i];
+							auto players = crew.Players;
+							if (players.Data)
+							{
+								for (uint32_t k = 0; k < players.Count; k++)
+								{
+									auto& player = players[k];
+									char buf[0x64];
+									player->PlayerName.multi(buf, 0x50);
+									ImGui::Text(buf);
+									ImGui::NextColumn();
+								}
+								ImGui::Separator();
+							}
+						}
+					}
+					ImGui::End();
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+					ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+				}
+				catch (...)
+				{
+					tslog::log("There is an exception occurring in Show Game Server Players");
+				}
+			}
+		}
+
+		for (UINT32 i = 0; i < levels.Count; i++)
+		{
+			error_code = 12;
+			if (!levels[i])
 				continue;
-
-
-			if (cfg->esp.enable)
+			TArray<ACharacter*> actors = levels[i]->AActors;
+			for (UINT32 j = 0; j < actors.Count; j++)
 			{
-				if (actor == localPlayerActor) continue;
-				if (cfg->esp.players.enable)
+				ACharacter* actor = actors[j];
+				if (!actor)
+					continue;
+
+				if (cfg->esp.enable)
 				{
-					if (actor->isPlayer())
+					error_code = 13;
+					if (actor == localPlayerActor) continue;
+					if (cfg->esp.players.enable)
 					{
-						const bool isTeamMate = UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor);
-						if (!cfg->esp.players.team && isTeamMate) continue;
-						const FVector location = actor->K2_GetActorLocation();
-						const float dist = myLocation.DistTo(location) * 0.01f;
-						if (dist >= cfg->esp.players.renderDistance) continue;
-
-						FVector origin, extent;
-						actor->GetActorBounds(true, origin, extent);
-						FVector2D headPos;
-						playerController->ProjectWorldLocationToScreen({ location.X, location.Y, location.Z + extent.Z }, headPos);
-						FVector2D footPos;
-						playerController->ProjectWorldLocationToScreen({ location.X, location.Y, location.Z - extent.Z }, footPos);
-						const float height = abs(footPos.Y - headPos.Y);
-						const float width = height * 0.4f;
-
-						ImVec4 color = (playerController->LineOfSightTo(actor, cameraLocation, false)) ? cfg->esp.players.colorVisible : cfg->esp.players.colorInvisible;
-						if (!isTeamMate)
-							Render2DBox(drawList, headPos, footPos, height, width, color);
-
-						FVector2D screen;
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
+						if (actor->isPlayer())
 						{
-							auto const playerState = actor->PlayerState;
-							if (!playerState) continue;
-							const auto playerName = playerState->PlayerName;
-							if (!playerName.Data) continue;
+							error_code = 14;
+							const bool isTeamMate = UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor);
+							if (!cfg->esp.players.team && isTeamMate) continue;
+							const FVector location = actor->K2_GetActorLocation();
+							const float dist = myLocation.DistTo(location) * 0.01f;
+							if (dist >= cfg->esp.players.renderDistance) continue;
 
-							char buf[0x64];
-							ZeroMemory(buf, sizeof(buf));
-							const int len = playerName.multi(buf, 0x20);
-							sprintf_s(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
-							RenderText(drawList, buf, screen, color, dist);
-						}
+							FVector origin, extent;
+							actor->GetActorBounds(true, origin, extent);
+							FVector2D headPos;
+							playerController->ProjectWorldLocationToScreen({ location.X, location.Y, location.Z + extent.Z }, headPos);
+							FVector2D footPos;
+							playerController->ProjectWorldLocationToScreen({ location.X, location.Y, location.Z - extent.Z }, footPos);
+							const float height = abs(footPos.Y - headPos.Y);
+							const float width = height * 0.4f;
 
-						if (cfg->esp.players.tracers && !isTeamMate)
-						{
-							Vector2 bScreen = Vector2();
-							float fov = cfg->client.fov;
-							if (WorldToScreen(Vector3(location.X, location.Y, location.Z), &bScreen, cameraLocation, cameraRotation, fov))
+							ImVec4 color = (playerController->LineOfSightTo(actor, cameraLocation, false)) ? cfg->esp.players.colorVisible : cfg->esp.players.colorInvisible;
+							if (!isTeamMate)
+								Render2DBox(drawList, headPos, footPos, height, width, color);
+
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
 							{
-								auto col = ImGui::GetColorU32(color);
-								drawList->AddLine({ io.DisplaySize.x * 0.5f , io.DisplaySize.y * 0.5f }, { bScreen.x, bScreen.y }, col, cfg->esp.players.tracersThickness);
+								auto const playerState = actor->PlayerState;
+								if (!playerState) continue;
+								const auto playerName = playerState->PlayerName;
+								if (!playerName.Data) continue;
+
+								char buf[0x64];
+								ZeroMemory(buf, sizeof(buf));
+								const int len = playerName.multi(buf, 0x20);
+								sprintf_s(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
+								RenderText(drawList, buf, screen, color, dist);
 							}
-						}
-					}
-				}
-				if (cfg->esp.skeletons.enable)
-				{
-					if (actor->isSkeleton())
-					{
-						const FVector location = actor->K2_GetActorLocation();
-						const float dist = myLocation.DistTo(location) * 0.01f;
-						if (dist >= cfg->esp.skeletons.renderDistance) continue;
-						FVector2D screen;
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
-						{
-							char buf[0x64];
-							ZeroMemory(buf, sizeof(buf));
-							sprintf_s(buf, sizeof(buf), "Skeleton [%.0fm]", dist);
-							RenderText(drawList, buf, screen, cfg->esp.skeletons.color, dist);
-						}
-					}
-				}
-				if (cfg->esp.ships.enable)
-				{
-					FVector location = actor->K2_GetActorLocation();
-					const float dist = myLocation.DistTo(location) * 0.01f;
-					location.Z = 3000;
 
-					if (actor->isShip() || actor->isFarShip())
-					{
-						if (dist >= cfg->esp.ships.renderDistance) continue;
-						FVector2D screen;
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
-						{
-							char buf[0x64];
-							ZeroMemory(buf, sizeof(buf));
-							const float velocity = (actor->GetVelocity() * 0.01f).Size();
-							float internalWater = 0.f;
-							if (!actor->isFarShip()) internalWater = actor->GetInternalWater()->GetNormalizedWaterAmount() * 100.f;
-
-							if (actor->isShip() && dist < 1726)
+							if (cfg->esp.players.tracers && !isTeamMate)
 							{
-								if (actor->compareName("BP_Small"))
-									sprintf_s(buf, sizeof(buf), "Sloop [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
-								else if (actor->compareName("BP_Medium"))
-									sprintf_s(buf, sizeof(buf), "Brigatine [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
-								else if (actor->compareName("BP_Large"))
-									sprintf_s(buf, sizeof(buf), "Galleon [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
-								else if (actor->compareName("AISmall") && cfg->esp.ships.skeletons)
-									sprintf_s(buf, sizeof(buf), "AI Sloop [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
-								else if (actor->compareName("AILarge") && cfg->esp.ships.skeletons)
-									sprintf_s(buf, sizeof(buf), "AI Galleon [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
-
-								RenderText(drawList, buf, screen, cfg->esp.ships.color, 20);
-							}
-							else if (actor->isFarShip() && dist > 1725)
-							{
-								if (actor->compareName("BP_Small"))
-									sprintf_s(buf, sizeof(buf), "Sloop [%.0fm][%.0fm/s]", dist, velocity);
-								else if (actor->compareName("BP_Medium"))
-									sprintf_s(buf, sizeof(buf), "Brigatine [%.0fm][%.0fm/s]", dist, velocity);
-								else if (actor->compareName("BP_Large"))
-									sprintf_s(buf, sizeof(buf), "Galleon [%.0fm][%.0fm/s]", dist, velocity);
-								else if (actor->compareName("AISmall") && cfg->esp.ships.skeletons)
-									sprintf_s(buf, sizeof(buf), "AI Sloop [%.0fm][%.0fm/s]", dist, velocity);
-								else if (actor->compareName("AILarge") && cfg->esp.ships.skeletons)
-									sprintf_s(buf, sizeof(buf), "AI Galleon [%.0fm][%.0fm/s]", dist, velocity);
-
-								RenderText(drawList, buf, screen, cfg->esp.ships.color, 20);
-							}
-						}
-					}
-					if (cfg->esp.ships.ghosts && actor->isGhostShip())
-					{
-						FVector2D screen;
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
-						{
-							int lives = reinterpret_cast<AAggressiveGhostShip*>(actor)->NumShotsLeftToKill;
-							char buf[0x64];
-							ZeroMemory(buf, sizeof(buf));
-							const int len = sprintf_s(buf, sizeof(buf), "Ghost Ship [%.0fm] | ", dist);
-							switch (lives)
-							{
-							case 3: snprintf(buf + len, sizeof(buf) - len, "***"); break;
-							case 2: snprintf(buf + len, sizeof(buf) - len, "**"); break;
-							case 1: snprintf(buf + len, sizeof(buf) - len, "*"); break;
-							default: snprintf(buf + len, sizeof(buf) - len, "DEAD"); break;
-							}
-							if (lives > 0)
-								RenderText(drawList, buf, screen, cfg->esp.ships.color, 20);
-						}
-					}
-					if (actor->isShip())
-					{
-						const FVector location = actor->K2_GetActorLocation();
-						const int dist = myLocation.DistTo(location) * 0.01f;
-						FVector2D screen;
-						if (cfg->esp.ships.holes && dist <= 225)
-						{
-							auto const damage = actor->GetHullDamage();
-							if (!damage) continue;
-							const auto holes = damage->ActiveHullDamageZones;
-							for (auto h = 0u; h < holes.Count; h++)
-							{
-								auto const hole = holes[h];
-								const FVector location = hole->K2_GetActorLocation();
-								if (playerController->ProjectWorldLocationToScreen(location, screen))
+								error_code = 15;
+								Vector2 bScreen = Vector2();
+								float fov = cfg->client.fov;
+								if (WorldToScreen(Vector3(location.X, location.Y, location.Z), &bScreen, cameraLocation, cameraRotation, fov))
 								{
-									auto color = cfg->esp.ships.holesColor;
-									drawList->AddLine({ screen.X - 6.f, screen.Y + 6.f }, { screen.X + 6.f, screen.Y - 6.f }, ImGui::GetColorU32(color));
-									drawList->AddLine({ screen.X - 6.f, screen.Y - 6.f }, { screen.X + 6.f, screen.Y + 6.f }, ImGui::GetColorU32(color));
+									auto col = ImGui::GetColorU32(color);
+									drawList->AddLine({ io.DisplaySize.x * 0.5f , io.DisplaySize.y * 0.5f }, { bScreen.x, bScreen.y }, col, cfg->esp.players.tracersThickness);
 								}
 							}
 						}
 					}
-				}
-
-				if (cfg->esp.islands.marks && actor->isXMarkMap()) // TODO: fix this shit
-				{
-					if (XMarksMapCount == 1 && item && item->isXMarkMap())
-						RenderText(drawList, "Recognized Maps:", { io.DisplaySize.x * 0.85f, io.DisplaySize.y * 0.85f }, { 1.f, 1.f, 0.f, 1.f }, 30);
-					auto map = reinterpret_cast<AXMarksTheSpotMap*>(actor);
-					FString mapName = map->MapTexturePath;
-					auto mapMarks = map->Marks;
-
-					char cMapName[0x64];
-					const int len = mapName.multi(cMapName, sizeof(cMapName));
-					int mapCode = getMapNameCode(cMapName);
-
-					try
+					if (cfg->esp.skeletons.enable)
 					{
-						const auto islandDataEntries = AthenaGameViewportClient->World->GameState->IslandService->IslandDataAsset->IslandDataEntries;
-
-						float scaleFactor = 1.041669;
-
-						for (auto i = 0u; i < islandDataEntries.Count; i++)
+						if (actor->isSkeleton())
 						{
-							auto island = islandDataEntries[i];
-							const char* sIslandName = island->IslandName.GetNameFast();
-							char ccIsland[0x64];
-							ZeroMemory(ccIsland, sizeof(ccIsland));
-							sprintf_s(ccIsland, sizeof(ccIsland), sIslandName);
-
-							int code = getMapNameCode(ccIsland);
-
-							if (mapCode == code)
-							{
-								std::string buf = getIslandNameByCode(mapCode);
-								if (item && item->isXMarkMap())
-									RenderText(drawList, buf.c_str(), { io.DisplaySize.x * 0.85f, io.DisplaySize.y * 0.85f + 10 + 20 * XMarksMapCount }, { 0.f, 1.f, 0.f, 1.f }, 22);
-								XMarksMapCount++;
-
-								auto const WorldMapData = island->WorldMapData;
-								if (!WorldMapData) continue;
-
-								const FVector islandLoc = WorldMapData->CaptureParams.WorldSpaceCameraPosition;
-								auto islandOrtho = WorldMapData->CaptureParams.CameraOrthoWidth;
-
-
-								for (auto i = 0u; i < mapMarks.Count; i++)
-								{
-									auto mark = mapMarks[i];
-
-									Vector2 v = Vector2(mark.Position);
-									Vector2 vectorRotated = RotatePoint(v, Vector2(0.5f, 0.5f), 180 + map->Rotation, false);
-									Vector2 vectorAlligned = Vector2(vectorRotated.x - 0.5f, vectorRotated.y - 0.5f);
-
-									float islandScale = islandOrtho / scaleFactor;
-									Vector2 offsetPos = vectorAlligned * islandScale;
-
-
-									FVector digSpot = FVector(islandLoc.X - offsetPos.x, islandLoc.Y - offsetPos.y, 0.f);
-
-									FHitResult hit_result;
-									auto start = FVector(digSpot.X, digSpot.Y, 5000.f);
-
-									bool res = raytrace(world, start, digSpot, &hit_result);
-									digSpot.Z = hit_result.ImpactPoint.Z;
-
-									FVector2D screen;
-									if (playerController->ProjectWorldLocationToScreen(digSpot, screen))
-									{
-										char buf3[0x64];
-										const int dist = myLocation.DistTo(digSpot) * 0.01f;
-										if (dist > cfg->esp.islands.marksRenderDistance) continue;
-										sprintf_s(buf3, sizeof(buf3), "X [%dm]", dist);
-										RenderText(drawList, buf3, screen, cfg->esp.islands.marksColor, 18);
-									}
-
-								}
-							}
-						}
-					}
-					catch (...) {}
-
-				}
-
-				if (cfg->esp.islands.enable)
-				{
-					if (cfg->esp.islands.vaults && actor->isPuzzleVault())
-					{
-						auto vault = reinterpret_cast<APuzzleVault*>(actor);
-						const FVector location = reinterpret_cast<ACharacter*>(vault->OuterDoor)->K2_GetActorLocation();
-						FVector2D screen;
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
-						{
-							char buf[0x64];
+							error_code = 16;
+							const FVector location = actor->K2_GetActorLocation();
 							const float dist = myLocation.DistTo(location) * 0.01f;
-							if (dist > cfg->esp.islands.vaultsRenderDistance) continue;
-							sprintf_s(buf, "Vault Door [%.0fm]", dist);
-							RenderText(drawList, buf, screen, cfg->esp.islands.vaultsColor, 51.f);
-						}
-					}
-					if (cfg->esp.islands.barrels && actor->isBarrel())
-					{
-						const FVector location = actor->K2_GetActorLocation();
-						FVector2D screen;
-						const int dist = myLocation.DistTo(location) * 0.01f;
-						if (dist > cfg->esp.islands.barrelsRenderDistance) continue;
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
-						{
-							char buf[0x64];
-							sprintf_s(buf, "B");
-							RenderText(drawList, buf, screen, cfg->esp.islands.barrelsColor, 16);
-						}
-
-					}
-					if (cfg->esp.islands.ammoChest)
-					{
-						const FVector location = actor->K2_GetActorLocation();
-						FVector2D screen;
-						if (actor->isAmmoChest())
-						{
-							const float dist = myLocation.DistTo(location) * 0.01f;
-							if (dist > cfg->esp.islands.ammoChestRenderDistance) continue;
+							if (dist >= cfg->esp.skeletons.renderDistance) continue;
+							FVector2D screen;
 							if (playerController->ProjectWorldLocationToScreen(location, screen))
 							{
 								char buf[0x64];
-								sprintf_s(buf, "Ammo Chest [%.0fm]", dist);
-								RenderText(drawList, buf, screen, cfg->esp.islands.ammoChestColor, 20);
+								ZeroMemory(buf, sizeof(buf));
+								sprintf_s(buf, sizeof(buf), "Skeleton [%.0fm]", dist);
+								RenderText(drawList, buf, screen, cfg->esp.skeletons.color, dist);
 							}
 						}
 					}
-				}
-				if (cfg->esp.items.enable)
-				{
-					auto location = actor->K2_GetActorLocation();
-					FVector2D screen;
-					if (actor->isItem())
+					if (cfg->esp.ships.enable)
 					{
+						error_code = 17;
+						FVector location = actor->K2_GetActorLocation();
 						const float dist = myLocation.DistTo(location) * 0.01f;
-						if (dist > cfg->esp.items.renderDistance) continue;
+						location.Z = 3000;
 
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
+						if (actor->isShip() || actor->isFarShip())
 						{
-							char buf[0x64];
-							ZeroMemory(buf, sizeof(buf));
-
-							if (actor->compareName("BP_SunkenCurseArtefact_"))
+							if (dist >= cfg->esp.ships.renderDistance) continue;
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
 							{
-								if (actor->compareName("Ruby"))
-									sprintf_s(buf, sizeof(buf), "Ruby UnderWater Statue");
-								if (actor->compareName("Emerald"))
-									sprintf_s(buf, sizeof(buf), "Emerald UnderWater Statue");
-								if (actor->compareName("Sapphire"))
-									sprintf_s(buf, sizeof(buf), "Sapphire UnderWater Statue");
+								char buf[0x64];
+								ZeroMemory(buf, sizeof(buf));
+								const float velocity = (actor->GetVelocity() * 0.01f).Size();
+								float internalWater = 0.f;
+								if (!actor->isFarShip()) internalWater = actor->GetInternalWater()->GetNormalizedWaterAmount() * 100.f;
+
+								if (actor->isShip() && dist < 1726)
+								{
+									if (actor->compareName("BP_Small"))
+										sprintf_s(buf, sizeof(buf), "Sloop [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
+									else if (actor->compareName("BP_Medium"))
+										sprintf_s(buf, sizeof(buf), "Brigatine [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
+									else if (actor->compareName("BP_Large"))
+										sprintf_s(buf, sizeof(buf), "Galleon [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
+									else if (actor->compareName("AISmall") && cfg->esp.ships.skeletons)
+										sprintf_s(buf, sizeof(buf), "AI Sloop [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
+									else if (actor->compareName("AILarge") && cfg->esp.ships.skeletons)
+										sprintf_s(buf, sizeof(buf), "AI Galleon [%.0f%%][%.0fm][%.0fm/s]", internalWater, dist, velocity);
+
+									RenderText(drawList, buf, screen, cfg->esp.ships.color, 20);
+								}
+								else if (actor->isFarShip() && dist > 1725)
+								{
+									if (actor->compareName("BP_Small"))
+										sprintf_s(buf, sizeof(buf), "Sloop [%.0fm]", dist);
+									else if (actor->compareName("BP_Medium"))
+										sprintf_s(buf, sizeof(buf), "Brigatine [%.0fm]", dist);
+									else if (actor->compareName("BP_Large"))
+										sprintf_s(buf, sizeof(buf), "Galleon [%.0fm]", dist);
+									else if (actor->compareName("AISmall") && cfg->esp.ships.skeletons)
+										sprintf_s(buf, sizeof(buf), "AI Sloop [%.0fm]", dist);
+									else if (actor->compareName("AILarge") && cfg->esp.ships.skeletons)
+										sprintf_s(buf, sizeof(buf), "AI Galleon [%.0fm]", dist);
+
+									RenderText(drawList, buf, screen, cfg->esp.ships.color, 20);
+								}
+							}
+						}
+						if (cfg->esp.ships.ghosts && actor->isGhostShip())
+						{
+							error_code = 18;
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								int lives = reinterpret_cast<AAggressiveGhostShip*>(actor)->NumShotsLeftToKill;
+								char buf[0x64];
+								ZeroMemory(buf, sizeof(buf));
+								const int len = sprintf_s(buf, sizeof(buf), "Ghost Ship [%.0fm] | ", dist);
+								switch (lives)
+								{
+								case 3: snprintf(buf + len, sizeof(buf) - len, "***"); break;
+								case 2: snprintf(buf + len, sizeof(buf) - len, "**"); break;
+								case 1: snprintf(buf + len, sizeof(buf) - len, "*"); break;
+								default: snprintf(buf + len, sizeof(buf) - len, "DEAD"); break;
+								}
+								if (lives > 0)
+									RenderText(drawList, buf, screen, cfg->esp.ships.color, 20);
+							}
+						}
+						if (actor->isShip())
+						{
+							error_code = 19;
+							const FVector location = actor->K2_GetActorLocation();
+							const int dist = myLocation.DistTo(location) * 0.01f;
+							FVector2D screen;
+							if (cfg->esp.ships.holes && dist <= 225)
+							{
+								auto const damage = actor->GetHullDamage();
+								if (!damage) continue;
+								const auto holes = damage->ActiveHullDamageZones;
+								for (auto h = 0u; h < holes.Count; h++)
+								{
+									auto const hole = holes[h];
+									const FVector location = hole->K2_GetActorLocation();
+									if (playerController->ProjectWorldLocationToScreen(location, screen))
+									{
+										auto color = cfg->esp.ships.holesColor;
+										drawList->AddLine({ screen.X - 6.f, screen.Y + 6.f }, { screen.X + 6.f, screen.Y - 6.f }, ImGui::GetColorU32(color));
+										drawList->AddLine({ screen.X - 6.f, screen.Y - 6.f }, { screen.X + 6.f, screen.Y + 6.f }, ImGui::GetColorU32(color));
+									}
+								}
+							}
+						}
+					}
+
+					if (cfg->esp.islands.marks && actor->isXMarkMap())
+					{
+						error_code = 20;
+						if (XMarksMapCount == 1 && item && item->isXMarkMap())
+							RenderText(drawList, "Recognized Maps:", { io.DisplaySize.x * 0.85f, io.DisplaySize.y * 0.85f }, { 1.f, 1.f, 0.f, 1.f }, 30);
+						auto map = reinterpret_cast<AXMarksTheSpotMap*>(actor);
+						FString mapName = map->MapTexturePath;
+						auto mapMarks = map->Marks;
+
+						char cMapName[0x64];
+						const int len = mapName.multi(cMapName, sizeof(cMapName));
+						int mapCode = getMapNameCode(cMapName);
+
+						try
+						{
+							const auto islandDataEntries = AthenaGameViewportClient->World->GameState->IslandService->IslandDataAsset->IslandDataEntries;
+
+							float scaleFactor = 1.041669;
+
+							for (auto i = 0u; i < islandDataEntries.Count; i++)
+							{
+								auto island = islandDataEntries[i];
+								const char* sIslandName = island->IslandName.GetNameFast();
+								char ccIsland[0x64];
+								ZeroMemory(ccIsland, sizeof(ccIsland));
+								sprintf_s(ccIsland, sizeof(ccIsland), sIslandName);
+
+								int code = getMapNameCode(ccIsland);
+
+								if (mapCode == code)
+								{
+									std::string buf = getIslandNameByCode(mapCode);
+									if (item && item->isXMarkMap())
+										RenderText(drawList, buf.c_str(), { io.DisplaySize.x * 0.85f, io.DisplaySize.y * 0.85f + 10 + 20 * XMarksMapCount }, { 0.f, 1.f, 0.f, 1.f }, 22);
+									XMarksMapCount++;
+
+									auto const WorldMapData = island->WorldMapData;
+									if (!WorldMapData) continue;
+
+									const FVector islandLoc = WorldMapData->CaptureParams.WorldSpaceCameraPosition;
+									auto islandOrtho = WorldMapData->CaptureParams.CameraOrthoWidth;
+
+
+									for (auto i = 0u; i < mapMarks.Count; i++)
+									{
+										auto mark = mapMarks[i];
+
+										Vector2 v = Vector2(mark.Position);
+										Vector2 vectorRotated = RotatePoint(v, Vector2(0.5f, 0.5f), 180 + map->Rotation, false);
+										Vector2 vectorAlligned = Vector2(vectorRotated.x - 0.5f, vectorRotated.y - 0.5f);
+
+										float islandScale = islandOrtho / scaleFactor;
+										Vector2 offsetPos = vectorAlligned * islandScale;
+
+
+										FVector digSpot = FVector(islandLoc.X - offsetPos.x, islandLoc.Y - offsetPos.y, 0.f);
+
+										FHitResult hit_result;
+										auto start = FVector(digSpot.X, digSpot.Y, 5000.f);
+
+										bool res = raytrace(world, start, digSpot, &hit_result);
+										digSpot.Z = hit_result.ImpactPoint.Z;
+
+										FVector2D screen;
+										if (playerController->ProjectWorldLocationToScreen(digSpot, screen))
+										{
+											char buf3[0x64];
+											const int dist = myLocation.DistTo(digSpot) * 0.01f;
+											if (dist > cfg->esp.islands.marksRenderDistance) continue;
+											sprintf_s(buf3, sizeof(buf3), "X [%dm]", dist);
+											RenderText(drawList, buf3, screen, cfg->esp.islands.marksColor, 18);
+										}
+
+									}
+								}
+							}
+						}
+						catch (...) {}
+
+					}
+
+					if (cfg->esp.islands.enable)
+					{
+						if (cfg->esp.islands.vaults && actor->isPuzzleVault())
+						{
+							error_code = 21;
+							auto vault = reinterpret_cast<APuzzleVault*>(actor);
+							const FVector location = reinterpret_cast<ACharacter*>(vault->OuterDoor)->K2_GetActorLocation();
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								char buf[0x64];
+								const float dist = myLocation.DistTo(location) * 0.01f;
+								if (dist > cfg->esp.islands.vaultsRenderDistance) continue;
+								sprintf_s(buf, "Vault Door [%.0fm]", dist);
+								RenderText(drawList, buf, screen, cfg->esp.islands.vaultsColor, 51.f);
+							}
+						}
+						if (cfg->esp.islands.barrels && actor->isBarrel())
+						{
+							error_code = 22;
+							const FVector location = actor->K2_GetActorLocation();
+							FVector2D screen;
+							const int dist = myLocation.DistTo(location) * 0.01f;
+							if (dist > cfg->esp.islands.barrelsRenderDistance) continue;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								char buf[0x64];
+								sprintf_s(buf, "B");
+								RenderText(drawList, buf, screen, cfg->esp.islands.barrelsColor, 16);
+							}
+
+						}
+						if (cfg->esp.islands.ammoChest)
+						{
+							error_code = 23;
+							const FVector location = actor->K2_GetActorLocation();
+							FVector2D screen;
+							if (actor->isAmmoChest())
+							{
+								const float dist = myLocation.DistTo(location) * 0.01f;
+								if (dist > cfg->esp.islands.ammoChestRenderDistance) continue;
+								if (playerController->ProjectWorldLocationToScreen(location, screen))
+								{
+									char buf[0x64];
+									sprintf_s(buf, "Ammo Chest [%.0fm]", dist);
+									RenderText(drawList, buf, screen, cfg->esp.islands.ammoChestColor, 20);
+								}
+							}
+						}
+					}
+					if (cfg->esp.items.enable)
+					{
+						error_code = 24;
+						auto location = actor->K2_GetActorLocation();
+						const float dist = myLocation.DistTo(location) * 0.01f;
+						FVector2D screen;
+						if (actor->isItem())
+						{
+							if (dist > cfg->esp.items.renderDistance) continue;
+
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								char buf[0x64];
+								ZeroMemory(buf, sizeof(buf));
+
+								auto const desc = actor->GetItemInfo()->Desc;
+								if (!desc) continue;
+								const int len = desc->Title->multi(buf, 0x50);
+								snprintf(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
 								if (cfg->esp.items.nameToggle)
 								{
 									if (GetAsyncKeyState(0x52)) // R Key
@@ -668,127 +875,219 @@ void render(ImDrawList* drawList)
 								{
 									RenderText(drawList, buf, screen, cfg->esp.items.color, 51.f);
 								}
-								continue;
-							}
-
-							auto const desc = actor->GetItemInfo()->Desc;
-							if (!desc) continue;
-							const int len = desc->Title->multi(buf, 0x50);
-							snprintf(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
-							if (cfg->esp.items.nameToggle)
-							{
-								if (GetAsyncKeyState(0x52)) // R Key
-									RenderText(drawList, buf, screen, cfg->esp.items.color, 51.f);
-								else
-									RenderText(drawList, buf, screen, cfg->esp.items.color, 35.f);
-							}
-							else
-							{
-								RenderText(drawList, buf, screen, cfg->esp.items.color, 51.f);
 							}
 						}
-					}
-				}
-				if (cfg->esp.items.animals && actor->isAnimal())
-				{
-					FVector origin, extent;
-					actor->GetActorBounds(true, origin, extent);
-					FVector2D headPos;
-					if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z + extent.Z }, headPos)) continue;
-					FVector2D footPos;
-					if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z - extent.Z }, footPos)) continue;
-					float height = abs(footPos.Y - headPos.Y);
-					float width = height * 0.6f;
+						char buf[0x64];
+						ZeroMemory(buf, sizeof(buf));
 
-					FText displayNameText = reinterpret_cast<AFauna*>(actor)->DisplayName;
-					FString displayNameString = FString(displayNameText.TextData->Text);
-					if (displayNameString.IsValid()) {
-						const float dist = myLocation.DistTo(origin) * 0.01f;
-						if (dist > cfg->esp.items.animalsRenderDistance) continue;
-						char buf[0x32];
-						const int len = displayNameString.multi(buf, 0x50);
-						snprintf(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
-						const float adjust = height * 0.05f;
-						FVector2D pos = { headPos.X, headPos.Y - adjust };
-						RenderText(drawList, buf, pos, cfg->esp.items.animalsColor, dist);
-					}
-				}
-				if (cfg->esp.others.enable)
-				{
-					if (cfg->esp.others.shipwrecks && (actor->isShipwreck() || actor->compareName("BP_Shipwreck_01_a_NetProxy_C")))
-					{
-						auto location = actor->K2_GetActorLocation();
-						FVector2D screen;
-						if (playerController->ProjectWorldLocationToScreen(location, screen))
+						if (actor->compareName("BP_SunkenCurseArtefact_"))
 						{
-							const float dist = myLocation.DistTo(location) * 0.01f;
-							if (dist > cfg->esp.others.shipwrecksRenderDistance) continue;
-							char buf[0x64];
-							sprintf_s(buf, sizeof(buf), "Shipwreck [%.0fm]", dist);
-							RenderText(drawList, buf, screen, cfg->esp.others.shipwrecksColor, dist);
-						}
-					}
-					if (cfg->esp.others.mermaids)
-					{
-						if (actor->isMermaid())
-						{
-							FVector2D screen;
-							const FVector location = actor->K2_GetActorLocation();
-							const float dist = myLocation.DistTo(location) * 0.01f;
-							if (dist > cfg->esp.others.mermaidsRenderDistance) continue;
-							{
-								if (playerController->ProjectWorldLocationToScreen(location, screen))
-								{
-									char buf[0x16];
-									sprintf_s(buf, sizeof(buf), "Mermaid [%.0fm]", dist);
-									RenderText(drawList, buf, screen, cfg->esp.others.mermaidsColor, 30);
-								}
-
-							}
-						}
-					}
-					if (cfg->esp.others.rowboats)
-					{
-						if (actor->isRowboat())
-						{
-							const FVector location = actor->K2_GetActorLocation();
-							const float dist = myLocation.DistTo(location) * 0.01f;
-							if (dist > cfg->esp.others.rowboatsRenderDistance) continue;
-							FVector2D screen;
+							error_code = 25;
 							if (playerController->ProjectWorldLocationToScreen(location, screen))
 							{
-								char buf[0x64];
-								if (actor->compareName("Cannon"))
-									sprintf_s(buf, sizeof(buf), "Cannon Rowboat [%.0fm]", dist);
-								else if (actor->compareName("Harpoon"))
-									sprintf_s(buf, sizeof(buf), "Harpoon Rowboat [%.0fm]", dist);
-								else if (actor->compareName("Rowboat"))
-									sprintf_s(buf, sizeof(buf), "Rowboat [%.0fm]", dist);
-								RenderText(drawList, buf, screen, cfg->esp.others.rowboatsColor, dist);
+								if (actor->compareName("Ruby"))
+									sprintf_s(buf, sizeof(buf), "Ruby UnderWater Statue [%.0fm]", dist);
+								if (actor->compareName("Emerald"))
+									sprintf_s(buf, sizeof(buf), "Emerald UnderWater Statue [%.0fm]", dist);
+								if (actor->compareName("Sapphire"))
+									sprintf_s(buf, sizeof(buf), "Sapphire UnderWater Statue [%.0fm]", dist);
+								if (cfg->esp.items.nameToggle)
+								{
+									if (GetAsyncKeyState(0x52)) // R Key
+										RenderText(drawList, buf, screen, cfg->esp.items.color, 51.f);
+									else
+										RenderText(drawList, buf, screen, cfg->esp.items.color, 35.f);
+								}
+								else
+								{
+									RenderText(drawList, buf, screen, cfg->esp.items.color, 51.f);
+								}
 							}
 						}
 					}
-					if (cfg->esp.others.sharks && actor->isShark())
+					if (cfg->esp.items.lostCargo)
 					{
+						error_code = 251;
+						auto location = actor->K2_GetActorLocation();
+						const float dist = myLocation.DistTo(location) * 0.01f;
+						FVector2D screen;
+						char buf[0x64];
+						ZeroMemory(buf, sizeof(buf));
+						if (actor->compareName("BP_Seagull01_"))
+						{
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								sprintf_s(buf, sizeof(buf), "Seagulls [%.0fm]", dist);
+								RenderText(drawList, buf, screen, cfg->esp.items.cluesColor, 51.f);
+							}
+						}
+						if (actor->compareName("BP_MessageInABottle_Clue_ItemInfo_C"))
+						{
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								sprintf_s(buf, sizeof(buf), "Clue In A Bottle [%.0fm]", dist);
+								RenderText(drawList, buf, screen, cfg->esp.items.cluesColor, 51.f);
+							}
+						}
+						if (actor->compareName("BP_MA_CabinDoorKey_ItemInfo_C"))
+						{
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								sprintf_s(buf, sizeof(buf), "Captains Key [%.0fm]", dist);
+								RenderText(drawList, buf, screen, cfg->esp.items.cluesColor, 51.f);
+							}
+						}
+					}
+					if (cfg->esp.items.gsRewards)
+					{
+						error_code = 252;
+						auto location = actor->K2_GetActorLocation();
+						const float dist = myLocation.DistTo(location) * 0.01f;
+						FVector2D screen;
+						char buf[0x64];
+						ZeroMemory(buf, sizeof(buf));
+						if (actor->compareName("BP_GhostShipRewardMarker_C"))
+						{
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								sprintf_s(buf, sizeof(buf), "Reward [%.0fm]", dist);
+								RenderText(drawList, buf, screen, cfg->esp.items.gsRewardsColor, 51.f);
+							}
+						}
+					}
+					if (cfg->esp.items.animals && actor->isAnimal())
+					{
+						error_code = 26;
 						FVector origin, extent;
 						actor->GetActorBounds(true, origin, extent);
 						FVector2D headPos;
 						if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z + extent.Z }, headPos)) continue;
 						FVector2D footPos;
 						if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z - extent.Z }, footPos)) continue;
-						const float height = abs(footPos.Y - headPos.Y);
-						const float width = height * 0.6f;
-						char buf[0x20];
-						const float dist = myLocation.DistTo(origin) * 0.01f;
-						if (dist > cfg->esp.others.sharksRenderDistance) continue;
-						sprintf_s(buf, sizeof(buf), "Shark [%.0fm]", dist);
-						const float adjust = height * 0.05f;
-						FVector2D pos = { headPos.X, headPos.Y - adjust };
-						RenderText(drawList, buf, pos, cfg->esp.others.sharksColor, 25);
+						float height = abs(footPos.Y - headPos.Y);
+						float width = height * 0.6f;
+
+						FText displayNameText = reinterpret_cast<AFauna*>(actor)->DisplayName;
+						FString displayNameString = FString(displayNameText.TextData->Text);
+						if (displayNameString.IsValid()) {
+							const float dist = myLocation.DistTo(origin) * 0.01f;
+							if (dist > cfg->esp.items.animalsRenderDistance) continue;
+							char buf[0x32];
+							const int len = displayNameString.multi(buf, 0x50);
+							snprintf(buf + len, sizeof(buf) - len, " [%.0fm]", dist);
+							const float adjust = height * 0.05f;
+							FVector2D pos = { headPos.X, headPos.Y - adjust };
+							RenderText(drawList, buf, pos, cfg->esp.items.animalsColor, dist);
+						}
 					}
-					if (cfg->esp.others.events)
+					if (cfg->esp.others.enable)
 					{
-						if (actor->isEvent())
+						if (cfg->esp.others.shipwrecks && (actor->isShipwreck() || actor->compareName("BP_Shipwreck_01_a_NetProxy_C")))
+						{
+							error_code = 27;
+							auto location = actor->K2_GetActorLocation();
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								const float dist = myLocation.DistTo(location) * 0.01f;
+								if (dist > cfg->esp.others.shipwrecksRenderDistance) continue;
+								char buf[0x64];
+								sprintf_s(buf, sizeof(buf), "Shipwreck [%.0fm]", dist);
+								RenderText(drawList, buf, screen, cfg->esp.others.shipwrecksColor, dist);
+							}
+						}
+						if (cfg->esp.others.mermaids)
+						{
+							if (actor->isMermaid())
+							{
+								error_code = 28;
+								FVector2D screen;
+								const FVector location = actor->K2_GetActorLocation();
+								const float dist = myLocation.DistTo(location) * 0.01f;
+								if (dist > cfg->esp.others.mermaidsRenderDistance) continue;
+								{
+									if (playerController->ProjectWorldLocationToScreen(location, screen))
+									{
+										char buf[0x16];
+										sprintf_s(buf, sizeof(buf), "Mermaid [%.0fm]", dist);
+										RenderText(drawList, buf, screen, cfg->esp.others.mermaidsColor, 30);
+									}
+
+								}
+							}
+						}
+						if (cfg->esp.others.rowboats)
+						{
+							if (actor->isRowboat())
+							{
+								error_code = 29;
+								const FVector location = actor->K2_GetActorLocation();
+								const float dist = myLocation.DistTo(location) * 0.01f;
+								if (dist > cfg->esp.others.rowboatsRenderDistance) continue;
+								FVector2D screen;
+								if (playerController->ProjectWorldLocationToScreen(location, screen))
+								{
+									char buf[0x64];
+									if (actor->compareName("Cannon"))
+										sprintf_s(buf, sizeof(buf), "Cannon Rowboat [%.0fm]", dist);
+									else if (actor->compareName("Harpoon"))
+										sprintf_s(buf, sizeof(buf), "Harpoon Rowboat [%.0fm]", dist);
+									else if (actor->compareName("Rowboat"))
+										sprintf_s(buf, sizeof(buf), "Rowboat [%.0fm]", dist);
+									RenderText(drawList, buf, screen, cfg->esp.others.rowboatsColor, dist);
+								}
+							}
+						}
+						if (cfg->esp.others.sharks && actor->isShark())
+						{
+							error_code = 30;
+							FVector origin, extent;
+							actor->GetActorBounds(true, origin, extent);
+							FVector2D headPos;
+							if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z + extent.Z }, headPos)) continue;
+							FVector2D footPos;
+							if (!playerController->ProjectWorldLocationToScreen({ origin.X, origin.Y, origin.Z - extent.Z }, footPos)) continue;
+							const float height = abs(footPos.Y - headPos.Y);
+							const float width = height * 0.6f;
+							char buf[0x20];
+							const float dist = myLocation.DistTo(origin) * 0.01f;
+							if (dist > cfg->esp.others.sharksRenderDistance) continue;
+							sprintf_s(buf, sizeof(buf), "Shark [%.0fm]", dist);
+							const float adjust = height * 0.05f;
+							FVector2D pos = { headPos.X, headPos.Y - adjust };
+							RenderText(drawList, buf, pos, cfg->esp.others.sharksColor, 25);
+						}
+						if (cfg->esp.others.events)
+						{
+							if (actor->isEvent())
+							{
+								error_code = 31;
+								const FVector location = actor->K2_GetActorLocation();
+								FVector2D screen;
+								if (playerController->ProjectWorldLocationToScreen(location, screen))
+								{
+									auto type = actor->GetName();
+									const float dist = myLocation.DistTo(location) * 0.01f;
+									if (dist > cfg->esp.others.eventsRenderDistance) continue;
+									char buf[0x64];
+									ZeroMemory(buf, sizeof(buf));
+									if (actor->compareName("ShipCloud"))
+										sprintf_s(buf, "Fleet [%.0fm]", dist);
+									else if (actor->compareName("AshenLord"))
+										sprintf_s(buf, "Ashen Lord [%.0fm]", dist);
+									else if (actor->compareName("Flameheart"))
+										sprintf_s(buf, "Flame Heart [%.0fm]", dist);
+									else if (actor->compareName("LegendSkellyFort"))
+										sprintf_s(buf, "Fort of Fortune [%.0fm]", dist);
+									else if (actor->compareName("SkellyFortOfTheDamned"))
+										sprintf_s(buf, "FOTD [%.0fm]", dist);
+									else if (actor->compareName("BP_SkellyFort"))
+										sprintf_s(buf, "Skull Fort [%.0fm]", dist);
+									RenderText(drawList, buf, screen, cfg->esp.others.eventsColor, 25);
+								}
+							}
+						}
+						if (cfg->esp.others.decals)
 						{
 							const FVector location = actor->K2_GetActorLocation();
 							FVector2D screen;
@@ -796,291 +1095,317 @@ void render(ImDrawList* drawList)
 							{
 								auto type = actor->GetName();
 								const float dist = myLocation.DistTo(location) * 0.01f;
-								if (dist > cfg->esp.others.eventsRenderDistance) continue;
+								if (dist > cfg->esp.others.decalsRenderDistance) continue;
 								char buf[0x64];
 								ZeroMemory(buf, sizeof(buf));
-								if (actor->compareName("ShipCloud"))
-									sprintf_s(buf, "Fleet [%.0fm]", dist);
-								else if (actor->compareName("AshenLord"))
-									sprintf_s(buf, "Ashen Lord [%.0fm]", dist);
-								else if (actor->compareName("Flameheart"))
-									sprintf_s(buf, "Flame Heart [%.0fm]", dist);
-								else if (actor->compareName("LegendSkellyFort"))
-									sprintf_s(buf, "Fort of Fortune [%.0fm]", dist);
-								else if (actor->compareName("SkellyFortOfTheDamned"))
-									sprintf_s(buf, "FOTD [%.0fm]", dist);
-								else if (actor->compareName("BP_SkellyFort"))
-									sprintf_s(buf, "Skull Fort [%.0fm]", dist);
-								RenderText(drawList, buf, screen, cfg->esp.others.eventsColor, 25);
+								if (actor->compareName("_civ_decal_")) {
+									sprintf_s(buf, "D");
+									RenderText(drawList, buf, screen, cfg->esp.others.decalsColor, 15);
+								}
 							}
 						}
 					}
 				}
-			}
 
-			if (cfg->aim.enable)
-			{
-				if (attachObject && attachObject->isCannon() && cfg->aim.cannon.enable)
+				if (cfg->aim.enable)
 				{
-					if (cfg->aim.cannon.chains && actor->isShip())
+					if (attachObject && attachObject->isCannon() && cfg->aim.cannon.enable)
 					{
-						do
+						error_code = 32;
+						if (cfg->aim.cannon.chains && actor->isShip())
 						{
-							if (actor == localPlayerActor->GetCurrentShip())
+							error_code = 33;
+							do
 							{
-								break;
-							}
-							FVector location = actor->K2_GetActorLocation();
-							if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
-							{
-								break;
-							}
-							if (location.DistTo(cameraLocation) > 55000)
-							{
-								break;
-							}
-							int amount = 0;
-							auto water = actor->GetInternalWater();
-							amount = water->GetNormalizedWaterAmount() * 100.f;
-							if (amount == 100)
-								break;
-							auto cannon = reinterpret_cast<ACannon*>(attachObject);
-							float gravity_scale = cannon->ProjectileGravityScale;
-							const FVector forward = actor->GetActorForwardVector();
-							const FVector up = actor->GetActorUpVector();
-							const FVector loc = actor->K2_GetActorLocation();
-							FVector loc_mast = loc;
-							loc_mast += forward * 80.f;
-							loc_mast += up * 1300.f;
-							location = loc_mast;
-							gravity_scale = 1.f;
-							FRotator low, high;
-							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-							if (i_solutions < 1)
-								break;
-							low.Clamp();
-							low -= attachObject->K2_GetActorRotation();
-							low.Clamp();
-							float absPitch = abs(low.Pitch);
-							float absYaw = abs(low.Yaw);
-							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
-							float sum = absYaw + absPitch;
-							if (sum < aimBest.best)
-							{
-								aimBest.target = actor;
-								aimBest.location = location;
-								aimBest.delta = low;
-								aimBest.best = sum;
-							}
-						} while (false);
-					}
-					if (cfg->aim.cannon.players && cfg->aim.cannon.chains == false && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
-					{
-						do
-						{
-							if (UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor)) break;
-							FVector location = actor->K2_GetActorLocation();
-							if (location.DistTo(cameraLocation) > 55000)
-							{
-								break;
-							}
-							auto cannon = reinterpret_cast<ACannon*>(attachObject);
-							float gravity_scale = cannon->ProjectileGravityScale;
-							FRotator low, high;
-							FVector acVelocity = actor->GetVelocity();
-							FVector acFVelocity = actor->GetForwardVelocity();
-							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
-							if (i_solutions < 1)
-								break;
-							low.Clamp();
-							low -= attachObject->K2_GetActorRotation();
-							low.Clamp();
-							float absPitch = abs(low.Pitch);
-							float absYaw = abs(low.Yaw);
-							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
-							float sum = absYaw + absPitch;
-							if (sum < aimBest.best)
-							{
-								aimBest.target = actor;
-								aimBest.location = location;
-								aimBest.delta = low;
-								aimBest.best = sum;
-							}
-						} while (false);
-					}
-					if (cfg->aim.cannon.skeletons && cfg->aim.cannon.chains == false && actor->isSkeleton() && actor != localPlayerActor && !actor->IsDead() && !playerController->LineOfSightTo(actor, cameraLocation, false))
-					{
-						do
-						{
-							FVector location = actor->K2_GetActorLocation();
-							if (location.DistTo(cameraLocation) > 55000)
-							{
-								break;
-							}
-							auto cannon = reinterpret_cast<ACannon*>(attachObject);
-							float gravity_scale = cannon->ProjectileGravityScale;
-							FRotator low, high;
-							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
-							if (i_solutions < 1)
-								break;
-							low.Clamp();
-							low -= attachObject->K2_GetActorRotation();
-							low.Clamp();
-							float absPitch = abs(low.Pitch);
-							float absYaw = abs(low.Yaw);
-							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
-							float sum = absYaw + absPitch;
-							if (sum < aimBest.best)
-							{
-								aimBest.target = actor;
-								aimBest.location = location;
-								aimBest.delta = low;
-								aimBest.best = sum;
-							}
-						} while (false);
-					}
-					if (cfg->aim.cannon.chains == false && actor->isShip())
-					{
-						do
-						{
-							if (actor == localPlayerActor->GetCurrentShip())
-							{
-								break;
-							}
-							FVector location = actor->K2_GetActorLocation();
-							if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
-							{
-								break;
-							}
-							if (location.DistTo(cameraLocation) > 55000)
-							{
-								break;
-							}
-							auto cannon = reinterpret_cast<ACannon*>(attachObject);
-							int amount = 0;
-							auto water = actor->GetInternalWater();
-							amount = water->GetNormalizedWaterAmount() * 100.f;
-							if (amount == 100)
-								break;
-							float gravity_scale = cannon->ProjectileGravityScale;
-							if (cfg->aim.cannon.deckshots)
-							{
+								if (actor == localPlayerActor->GetCurrentShip())
+								{
+									break;
+								}
+								FVector location = actor->K2_GetActorLocation();
+								if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
+								{
+									break;
+								}
+								if (location.DistTo(cameraLocation) > 55000)
+								{
+									break;
+								}
+								int amount = 0;
+								auto water = actor->GetInternalWater();
+								amount = water->GetNormalizedWaterAmount() * 100.f;
+								if (amount == 100)
+									break;
+								auto cannon = reinterpret_cast<ACannon*>(attachObject);
+								float gravity_scale = cannon->ProjectileGravityScale;
 								const FVector forward = actor->GetActorForwardVector();
 								const FVector up = actor->GetActorUpVector();
 								const FVector loc = actor->K2_GetActorLocation();
 								FVector loc_mast = loc;
-								loc_mast += forward * 52.f;
-								loc_mast += up * 275.f;
+								loc_mast += forward * 80.f;
+								loc_mast += up * 1300.f;
 								location = loc_mast;
-								gravity_scale = 1.30f;
-							}
-							else if (cfg->aim.cannon.lowAim)
-							{
-								auto const damage = actor->GetHullDamage();
-								if (damage)
+								gravity_scale = 1.f;
+								FRotator low, high;
+								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
+								if (i_solutions < 1)
+									break;
+								low.Clamp();
+								low -= attachObject->K2_GetActorRotation();
+								low.Clamp();
+								float absPitch = abs(low.Pitch);
+								float absYaw = abs(low.Yaw);
+								if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+								float sum = absYaw + absPitch;
+								if (sum < aimBest.best)
 								{
-									FVector loc = pickHoleToAim(damage, myLocation);
-									if (loc.Sum() != 9999.f)
-										location = loc;
+									aimBest.target = actor;
+									aimBest.location = location;
+									aimBest.delta = low;
+									aimBest.best = sum;
 								}
-							}
-							FRotator low, high;
-							int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-							if (i_solutions < 1)
-								break;
-							low.Clamp();
-							low -= attachObject->K2_GetActorRotation();
-							low.Clamp();
-							float absPitch = abs(low.Pitch);
-							float absYaw = abs(low.Yaw);
-							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
-							float sum = absYaw + absPitch;
-							if (sum < aimBest.best)
-							{
-								aimBest.target = actor;
-								aimBest.location = location;
-								aimBest.delta = low;
-								aimBest.best = sum;
-							}
-						} while (false);
-					}
-					if (cfg->aim.cannon.ghostShips && cfg->aim.cannon.chains == false && actor->isGhostShip())
-					{
-						do
+							} while (false);
+						}
+						if (cfg->aim.cannon.players && cfg->aim.cannon.chains == false && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
 						{
-							FVector location = actor->K2_GetActorLocation();
-							auto ship = reinterpret_cast<AAggressiveGhostShip*>(actor);
-							if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
+							error_code = 34;
+							do
 							{
-								break;
-							}
-							if (myLocation.DistTo(location) > 55000)
-							{
-								break;
-							}
-							auto cannon = reinterpret_cast<ACannon*>(attachObject);
-							float gravity_scale = cannon->ProjectileGravityScale;
-							auto forward = actor->GetActorForwardVector();
-							forward *= ship->ShipState.ShipSpeed;
-							FRotator low, high;
-							int i_solutions = AimAtMovingTarget(location, forward, cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-							if (i_solutions < 1)
-								break;
-							low.Clamp();
-							low -= attachObject->K2_GetActorRotation();
-							low.Clamp();
-							float absPitch = abs(low.Pitch);
-							float absYaw = abs(low.Yaw);
-							if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
-							float sum = absYaw + absPitch;
-							if (sum < aimBest.best)
-							{
-								aimBest.target = actor;
-								aimBest.location = location;
-								aimBest.delta = low;
-								aimBest.best = sum;
-							}
-						} while (false);
-					}
-				}
-				else if (isWieldedWeapon && cfg->aim.weapon.enable)
-				{
-					if (cfg->aim.weapon.players && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
-					{
-						do
+								if (UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor)) break;
+								FVector location = actor->K2_GetActorLocation();
+								if (location.DistTo(cameraLocation) > 55000)
+								{
+									break;
+								}
+								auto cannon = reinterpret_cast<ACannon*>(attachObject);
+								float gravity_scale = cannon->ProjectileGravityScale;
+								FRotator low, high;
+								FVector acVelocity = actor->GetVelocity();
+								FVector acFVelocity = actor->GetForwardVelocity();
+								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
+								if (i_solutions < 1)
+									break;
+								low.Clamp();
+								low -= attachObject->K2_GetActorRotation();
+								low.Clamp();
+								float absPitch = abs(low.Pitch);
+								float absYaw = abs(low.Yaw);
+								if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+								float sum = absYaw + absPitch;
+								if (sum < aimBest.best)
+								{
+									aimBest.target = actor;
+									aimBest.location = location;
+									aimBest.delta = low;
+									aimBest.best = sum;
+								}
+							} while (false);
+						}
+						if (cfg->aim.cannon.skeletons && cfg->aim.cannon.chains == false && actor->isSkeleton() && actor != localPlayerActor && !actor->IsDead() && !playerController->LineOfSightTo(actor, cameraLocation, false))
 						{
-							FVector playerLoc = actor->K2_GetActorLocation();
-							if (!actor->IsInWater() && localWeapon->WeaponParameters.NumberOfProjectiles == 1)
+							error_code = 35;
+							do
 							{
-								playerLoc.Z += cfg->aim.weapon.height;
-							}
-							float dist = myLocation.DistTo(playerLoc);
-							if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) { break; }
-							if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) { break; }
-							if (UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor)) break;
-							FRotator rotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, playerLoc), cameraRotation);
-							float absYaw = abs(rotationDelta.Yaw);
-							float absPitch = abs(rotationDelta.Pitch);
-							if (absYaw > cfg->aim.weapon.fYaw || absPitch > cfg->aim.weapon.fPitch) { break; }
-							float sum = absYaw + absPitch;
-							if (sum < aimBest.best)
+								FVector location = actor->K2_GetActorLocation();
+								if (location.DistTo(cameraLocation) > 55000)
+								{
+									break;
+								}
+								auto cannon = reinterpret_cast<ACannon*>(attachObject);
+								float gravity_scale = cannon->ProjectileGravityScale;
+								FRotator low, high;
+								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
+								if (i_solutions < 1)
+									break;
+								low.Clamp();
+								low -= attachObject->K2_GetActorRotation();
+								low.Clamp();
+								float absPitch = abs(low.Pitch);
+								float absYaw = abs(low.Yaw);
+								if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+								float sum = absYaw + absPitch;
+								if (sum < aimBest.best)
+								{
+									aimBest.target = actor;
+									aimBest.location = location;
+									aimBest.delta = low;
+									aimBest.best = sum;
+								}
+							} while (false);
+						}
+						if (cfg->aim.cannon.chains == false && actor->isShip())
+						{
+							error_code = 36;
+							do
 							{
-								aimBest.target = actor;
-								aimBest.location = playerLoc;
-								aimBest.delta = rotationDelta;
-								aimBest.best = sum;
-								aimBest.smoothness = cfg->aim.weapon.smooth;
-							}
-
-						} while (false);
+								if (actor == localPlayerActor->GetCurrentShip())
+								{
+									break;
+								}
+								FVector location = actor->K2_GetActorLocation();
+								if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
+								{
+									break;
+								}
+								if (location.DistTo(cameraLocation) > 55000)
+								{
+									break;
+								}
+								auto cannon = reinterpret_cast<ACannon*>(attachObject);
+								int amount = 0;
+								auto water = actor->GetInternalWater();
+								amount = water->GetNormalizedWaterAmount() * 100.f;
+								if (amount == 100)
+									break;
+								float gravity_scale = cannon->ProjectileGravityScale;
+								if (cfg->aim.cannon.deckshots)
+								{
+									const FVector forward = actor->GetActorForwardVector();
+									const FVector up = actor->GetActorUpVector();
+									const FVector loc = actor->K2_GetActorLocation();
+									FVector loc_mast = loc;
+									loc_mast += forward * 52.f;
+									loc_mast += up * 275.f;
+									location = loc_mast;
+									gravity_scale = 1.30f;
+								}
+								else if (cfg->aim.cannon.lowAim)
+								{
+									auto const damage = actor->GetHullDamage();
+									if (damage)
+									{
+										FVector loc = pickHoleToAim(damage, myLocation);
+										if (loc.Sum() != 9999.f)
+											location = loc;
+									}
+								}
+								FRotator low, high;
+								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
+								if (i_solutions < 1)
+									break;
+								low.Clamp();
+								low -= attachObject->K2_GetActorRotation();
+								low.Clamp();
+								float absPitch = abs(low.Pitch);
+								float absYaw = abs(low.Yaw);
+								if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+								float sum = absYaw + absPitch;
+								if (sum < aimBest.best)
+								{
+									aimBest.target = actor;
+									aimBest.location = location;
+									aimBest.delta = low;
+									aimBest.best = sum;
+								}
+							} while (false);
+						}
+						if (cfg->aim.cannon.ghostShips && cfg->aim.cannon.chains == false && actor->isGhostShip())
+						{
+							error_code = 37;
+							do
+							{
+								FVector location = actor->K2_GetActorLocation();
+								auto ship = reinterpret_cast<AAggressiveGhostShip*>(actor);
+								if (cfg->aim.cannon.visibleOnly && !playerController->LineOfSightTo(actor, cameraLocation, false))
+								{
+									break;
+								}
+								if (myLocation.DistTo(location) > 55000)
+								{
+									break;
+								}
+								auto cannon = reinterpret_cast<ACannon*>(attachObject);
+								float gravity_scale = cannon->ProjectileGravityScale;
+								auto forward = actor->GetActorForwardVector();
+								forward *= ship->ShipState.ShipSpeed;
+								FRotator low, high;
+								int i_solutions = AimAtMovingTarget(location, forward, cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
+								if (i_solutions < 1)
+									break;
+								low.Clamp();
+								low -= attachObject->K2_GetActorRotation();
+								low.Clamp();
+								float absPitch = abs(low.Pitch);
+								float absYaw = abs(low.Yaw);
+								if (absPitch > cfg->aim.cannon.fPitch || absYaw > cfg->aim.cannon.fYaw) { break; }
+								float sum = absYaw + absPitch;
+								if (sum < aimBest.best)
+								{
+									aimBest.target = actor;
+									aimBest.location = location;
+									aimBest.delta = low;
+									aimBest.best = sum;
+								}
+							} while (false);
+						}
 					}
-					if (cfg->aim.weapon.kegs)
+					else if (isWieldedWeapon && cfg->aim.weapon.enable)
 					{
-						if (actor->compareName("BP_MerchantCrate_GunpowderBarrel_"))
+						error_code = 38;
+						if (cfg->aim.weapon.players && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
 						{
 							do
 							{
-								const FVector playerLoc = actor->K2_GetActorLocation();
+								FVector playerLoc = actor->K2_GetActorLocation();
+								if (!actor->IsInWater() && localWeapon->WeaponParameters.NumberOfProjectiles == 1)
+								{
+									playerLoc.Z += cfg->aim.weapon.height;
+								}
+								float dist = myLocation.DistTo(playerLoc);
+								if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) { break; }
+								if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) { break; }
+								if (UCrewFunctions::AreCharactersInSameCrew(actor, localPlayerActor)) break;
+								FRotator rotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, playerLoc), cameraRotation);
+								float absYaw = abs(rotationDelta.Yaw);
+								float absPitch = abs(rotationDelta.Pitch);
+								if (absYaw > cfg->aim.weapon.fYaw || absPitch > cfg->aim.weapon.fPitch) { break; }
+								float sum = absYaw + absPitch;
+								if (sum < aimBest.best)
+								{
+									aimBest.target = actor;
+									aimBest.location = playerLoc;
+									aimBest.delta = rotationDelta;
+									aimBest.best = sum;
+									aimBest.smoothness = cfg->aim.weapon.smooth;
+								}
+
+							} while (false);
+						}
+						if (cfg->aim.weapon.kegs)
+						{
+							error_code = 39;
+							if (actor->compareName("BP_MerchantCrate_GunpowderBarrel_"))
+							{
+								do
+								{
+									const FVector playerLoc = actor->K2_GetActorLocation();
+									const float dist = myLocation.DistTo(playerLoc);
+									if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) break;
+									if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) break;
+									const FRotator rotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, playerLoc), cameraRotation);
+									const float absYaw = abs(rotationDelta.Yaw);
+									const float absPitch = abs(rotationDelta.Pitch);
+									if (absYaw > cfg->aim.weapon.fYaw || absPitch > cfg->aim.weapon.fPitch) break;
+									const float sum = absYaw + absPitch;
+									if (sum < aimBest.best)
+									{
+										aimBest.target = actor;
+										aimBest.location = playerLoc;
+										aimBest.delta = rotationDelta;
+										aimBest.best = sum;
+										aimBest.smoothness = cfg->aim.weapon.smooth;
+									}
+
+								} while (false);
+							}
+						}
+						if (cfg->aim.weapon.skeletons && actor->isSkeleton() && !actor->IsDead())
+						{
+							error_code = 40;
+							do
+							{
+								FVector playerLoc = actor->K2_GetActorLocation();
+								if (localWeapon->WeaponParameters.NumberOfProjectiles == 1)
+									playerLoc.Z += cfg->aim.weapon.height;
 								const float dist = myLocation.DistTo(playerLoc);
 								if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) break;
 								if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) break;
@@ -1097,246 +1422,230 @@ void render(ImDrawList* drawList)
 									aimBest.best = sum;
 									aimBest.smoothness = cfg->aim.weapon.smooth;
 								}
-
 							} while (false);
 						}
 					}
-					if (cfg->aim.weapon.skeletons && actor->isSkeleton() && !actor->IsDead())
-					{
-						do
-						{
-							FVector playerLoc = actor->K2_GetActorLocation();
-							if (localWeapon->WeaponParameters.NumberOfProjectiles == 1)
-								playerLoc.Z += cfg->aim.weapon.height;
-							const float dist = myLocation.DistTo(playerLoc);
-							if (dist > localWeapon->WeaponParameters.ProjectileMaximumRange * 2.f) break;
-							if (cfg->aim.weapon.visibleOnly) if (!playerController->LineOfSightTo(actor, cameraLocation, false)) break;
-							const FRotator rotationDelta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, playerLoc), cameraRotation);
-							const float absYaw = abs(rotationDelta.Yaw);
-							const float absPitch = abs(rotationDelta.Pitch);
-							if (absYaw > cfg->aim.weapon.fYaw || absPitch > cfg->aim.weapon.fPitch) break;
-							const float sum = absYaw + absPitch;
-							if (sum < aimBest.best)
-							{
-								aimBest.target = actor;
-								aimBest.location = playerLoc;
-								aimBest.delta = rotationDelta;
-								aimBest.best = sum;
-								aimBest.smoothness = cfg->aim.weapon.smooth;
-							}
-						} while (false);
-					}
 				}
-			}
 
-			if (cfg->game.enable)
-			{
-				if (cfg->game.mapPins)
+				if (cfg->game.enable)
 				{
-					if (actor->isMapTable())
+					if (cfg->game.mapPins)
 					{
-						if (localPlayerActor->GetCurrentShip() == actor->GetParentActor())
+						error_code = 41;
+						if (actor->isMapTable())
 						{
-							auto maptable = reinterpret_cast<AMapTable*>(actor);
-							auto map_pins = maptable->MapPins;
-							for (int i = 0; i < map_pins.Count; i++)
+							if (localPlayerActor->GetCurrentShip() == actor->GetParentActor())
 							{
-								FVector2D current_map_pin = map_pins[i];
-								current_map_pin *= 100.f;
-								FVector current_map_pin_world;
-								current_map_pin_world.X = current_map_pin.X;
-								current_map_pin_world.Y = current_map_pin.Y;
-								current_map_pin_world.Z = 0.f;
-								FVector2D screen;
-								if (playerController->ProjectWorldLocationToScreen(current_map_pin_world, screen))
+								auto maptable = reinterpret_cast<AMapTable*>(actor);
+								auto map_pins = maptable->MapPins;
+								for (int i = 0; i < map_pins.Count; i++)
 								{
-									const float dist = myLocation.DistTo(current_map_pin_world) * 0.01f;
-									char buf[0x64];
-									sprintf_s(buf, sizeof(buf), "Map Pin [%.0fm]", dist);
-									RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 15);
+									FVector2D current_map_pin = map_pins[i];
+									current_map_pin *= 100.f;
+									FVector current_map_pin_world;
+									current_map_pin_world.X = current_map_pin.X;
+									current_map_pin_world.Y = current_map_pin.Y;
+									current_map_pin_world.Z = 0.f;
+									FVector2D screen;
+									if (playerController->ProjectWorldLocationToScreen(current_map_pin_world, screen))
+									{
+										const float dist = myLocation.DistTo(current_map_pin_world) * 0.01f;
+										char buf[0x64];
+										sprintf_s(buf, sizeof(buf), "Map Pin [%.0fm]", dist);
+										RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 15);
+									}
 								}
 							}
 						}
 					}
-				}
-				// @Craftexperts
-				if (cfg->game.shipTray)
-				{
-					if (actor->isShip())
+					// @Craftexperts
+					if (cfg->game.shipTray)
 					{
-						try
+						error_code = 42;
+						if (actor->isShip())
 						{
-							//if (actor == localPlayerActor->GetCurrentShip())
-							//{
-							AActor* ship = reinterpret_cast<AActor*>(actor);
-							auto angular_velocity = ship->ReplicatedMovement.AngularVelocity;
-							auto tangential_velocity = ship->ReplicatedMovement.LinearVelocity;
-							tangential_velocity.Z = 0;
-							auto speed = FVector(tangential_velocity.X, tangential_velocity.Y, 0).Size();
+							try
+							{
+								if (actor == localPlayerActor->GetCurrentShip())
+								{
+									AActor* ship = reinterpret_cast<AActor*>(actor);
+									auto angular_velocity = ship->ReplicatedMovement.AngularVelocity;
+									auto tangential_velocity = ship->ReplicatedMovement.LinearVelocity;
+									tangential_velocity.Z = 0;
+									auto speed = FVector(tangential_velocity.X, tangential_velocity.Y, 0).Size();
 
-							float const pi = 3.14159f;
-							auto yaw_degrees = FVector(0, 0, angular_velocity.Z).Size();
-							auto yaw_radians = (yaw_degrees * pi) / 180;
+									float const pi = 3.14159f;
+									auto yaw_degrees = FVector(0, 0, angular_velocity.Z).Size();
+									auto yaw_radians = (yaw_degrees * pi) / 180;
 
-							auto turn_radius = speed / yaw_radians;
-							bool left = angular_velocity.Z > 0.f;
-							auto right = ship->GetActorRightVector(); right.Z = 0;
-							auto rotated_center_unit = left ? right : right * -1;
-							auto actor_location = actor->K2_GetActorLocation();
-							actor_location.Z += cfg->game.shipTrayHeight * 100.f;
-							auto center_of_rotation = (rotated_center_unit * turn_radius) + actor_location;
-							FLinearColor color = FLinearColor(cfg->game.shipTrayCol.x, cfg->game.shipTrayCol.y, cfg->game.shipTrayCol.z, cfg->game.shipTrayCol.w);
-							UKismetSystemLibrary::DrawDebugCircle(ship, center_of_rotation, turn_radius, 180, color, 0.f, cfg->game.shipTrayThickness, { 1,0,0 }, { 0,1,0 }, false);
+									auto turn_radius = speed / yaw_radians;
+									bool left = angular_velocity.Z > 0.f;
+									auto right = ship->GetActorRightVector(); right.Z = 0;
+									auto rotated_center_unit = left ? right : right * -1;
+									auto actor_location = actor->K2_GetActorLocation();
+									actor_location.Z += cfg->game.shipTrayHeight * 100.f;
+									auto center_of_rotation = (rotated_center_unit * turn_radius) + actor_location;
+									FLinearColor color = FLinearColor(cfg->game.shipTrayCol.x, cfg->game.shipTrayCol.y, cfg->game.shipTrayCol.z, cfg->game.shipTrayCol.w);
+									UKismetSystemLibrary::DrawDebugCircle(ship, center_of_rotation, turn_radius, 180, color, 0.f, cfg->game.shipTrayThickness, { 1,0,0 }, { 0,1,0 }, false);
 
-							//}
-						}catch(...){}
+								}
+							}
+							catch (...) {}
+						}
 					}
 				}
 			}
 		}
-	}
-	if (aimBest.target != nullptr)
-	{
-		FVector2D screen;
-		if (playerController->ProjectWorldLocationToScreen(aimBest.location, screen))
+		if (aimBest.target != nullptr)
 		{
-			auto col = ImGui::GetColorU32(IM_COL32(0, 200, 0, 255));
-			drawList->AddCircle({ screen.X, screen.Y }, 5.f, col, 0, 3);
-			drawList->AddLine({ screen.X, screen.Y - 20.f }, { screen.X, screen.Y + 20.f }, col, 2);
-			drawList->AddLine({ screen.X - 20.f, screen.Y }, { screen.X + 20.f, screen.Y }, col, 2);
-		}
-		static std::uintptr_t shotDesiredTime = 0;
-
-		if (GetAsyncKeyState(VK_RBUTTON))
-		{
-			if (attachObject && attachObject->isCannon())
+			error_code = 43;
+			FVector2D screen;
+			if (playerController->ProjectWorldLocationToScreen(aimBest.location, screen))
 			{
-				auto cannon = reinterpret_cast<ACannon*>(attachObject);
-				if (cannon)
+				auto col = ImGui::GetColorU32(IM_COL32(0, 200, 0, 255));
+				drawList->AddCircle({ screen.X, screen.Y }, 5.f, col, 0, 3);
+				drawList->AddLine({ screen.X, screen.Y - 20.f }, { screen.X, screen.Y + 20.f }, col, 2);
+				drawList->AddLine({ screen.X - 20.f, screen.Y }, { screen.X + 20.f, screen.Y }, col, 2);
+			}
+			static std::uintptr_t shotDesiredTime = 0;
+
+			if (GetAsyncKeyState(VK_RBUTTON))
+			{
+				if (attachObject && attachObject->isCannon())
 				{
-					if (((aimBest.delta.Pitch > cannon->PitchRange.max) || (aimBest.delta.Pitch < cannon->PitchRange.min)) || ((aimBest.delta.Yaw > cannon->YawRange.max) || (aimBest.delta.Yaw < cannon->YawRange.min)))
+					error_code = 44;
+					auto cannon = reinterpret_cast<ACannon*>(attachObject);
+					if (cannon)
 					{
-						std::string str_text_message = "TARGET IS OUT OF RANGE!";
-						drawList->AddText({ io.DisplaySize.x * 0.5f , io.DisplaySize.y * 0.5f + 30.f }, 0xFFFFFFFF, str_text_message.c_str());
+						if (((aimBest.delta.Pitch > cannon->PitchRange.max) || (aimBest.delta.Pitch < cannon->PitchRange.min)) || ((aimBest.delta.Yaw > cannon->YawRange.max) || (aimBest.delta.Yaw < cannon->YawRange.min)))
+						{
+							std::string str_text_message = "TARGET IS OUT OF RANGE!";
+							drawList->AddText({ io.DisplaySize.x * 0.5f , io.DisplaySize.y * 0.5f + 30.f }, 0xFFFFFFFF, str_text_message.c_str());
+						}
+						else
+						{
+							cannon->ForceAimCannon(aimBest.delta.Pitch, aimBest.delta.Yaw);
+							if (cfg->aim.cannon.instant && cannon->IsReadyToFire())
+							{
+								cannon->Fire();
+							}
+						}
+					}
+				}
+				else
+				{
+					error_code = 45;
+					FVector LV;
+					FVector TV;
+
+					if (cfg->aim.weapon.calcShipVel)
+					{
+						try // Kegs exception
+						{
+							LV = localPlayerActor->GetVelocity();
+							if (auto const localShip = localPlayerActor->GetCurrentShip()) LV += localShip->GetVelocity();
+							TV = aimBest.target->GetVelocity();
+							if (auto const targetShip = aimBest.target->GetCurrentShip()) TV += targetShip->GetVelocity();
+						}
+						catch (...)
+						{
+							LV = { 0.f,0.f,0.f };
+							TV = { 0.f,0.f,0.f };
+						}
 					}
 					else
 					{
-						cannon->ForceAimCannon(aimBest.delta.Pitch, aimBest.delta.Yaw);
-						if (cfg->aim.cannon.instant && cannon->IsReadyToFire())
-						{
-							cannon->Fire();
-						}
+						LV = { 0.f,0.f,0.f };
+						TV = { 0.f,0.f,0.f };
+					}
+					const FVector RV = TV - LV;
+					float BS;
+					if (localWeapon)
+						BS = localWeapon->WeaponParameters.AmmoParams.Velocity;
+					else
+						BS = 1.f;
+					const FVector RL = myLocation - aimBest.location;
+					const float a = RV.Size() - BS * BS;
+					const float b = (RL * RV * 2.f).Sum();
+					const float c = RL.SizeSquared();
+					const float D = b * b - 4 * a * c;
+					if (D > 0)
+					{
+						const float DRoot = sqrtf(D);
+						const float x1 = (-b + DRoot) / (2 * a);
+						const float x2 = (-b - DRoot) / (2 * a);
+						if (x1 >= 0 && x1 >= x2) aimBest.location += RV * x1;
+						else if (x2 >= 0) aimBest.location += RV * x2;
+						aimBest.delta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, aimBest.location), cameraRotation);
+						auto smoothness = 1.f / aimBest.smoothness;
+						playerController->AddYawInput(aimBest.delta.Yaw * smoothness);
+						playerController->AddPitchInput(aimBest.delta.Pitch * -smoothness);
+					}
+					static byte shotFixC = 0;
+					static bool shotFixing = false;
+
+					if (cfg->aim.weapon.trigger && isWieldedWeapon && localWeapon->CanFire())
+					{
+						error_code = 46;
+						do {
+							if (shotFixC != 1 && !shotFixing)
+							{
+								shotFixC++;
+								break;
+							}
+							if (shotDesiredTime == 0)
+							{
+								shotDesiredTime = milliseconds_now() + 210;
+								shotFixing = true;
+							}
+							if (milliseconds_now() >= shotDesiredTime)
+							{
+								shotDesiredTime = 0;
+								shotFixing = false;
+							}
+							else
+							{
+								break;
+							}
+
+							if (!playerController->LineOfSightTo(aimBest.target, cameraLocation, false)) break;
+							INPUT inputs[6] = {};
+							ZeroMemory(inputs, sizeof(inputs));
+
+							inputs[0].type = INPUT_MOUSE;
+							inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+							inputs[1].type = INPUT_MOUSE;
+							inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+
+							inputs[2].type = INPUT_KEYBOARD;
+							inputs[2].ki.wVk = 0x58; // X Key
+
+							inputs[3].type = INPUT_KEYBOARD;
+							inputs[3].ki.wVk = 0x58; // X Key
+							inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+
+							inputs[4].type = INPUT_KEYBOARD;
+							inputs[4].ki.wVk = 0x58; // X Key
+
+							inputs[5].type = INPUT_KEYBOARD;
+							inputs[5].ki.wVk = 0x58; // X Key
+							inputs[5].ki.dwFlags = KEYEVENTF_KEYUP;
+
+							SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+							shotFixC = 0;
+						} while (false);
 					}
 				}
 			}
 			else
 			{
-				FVector LV;
-				FVector TV;
-
-				if (cfg->aim.weapon.calcShipVel)
-				{
-					try // Kegs exception
-					{
-						LV = localPlayerActor->GetVelocity();
-						if (auto const localShip = localPlayerActor->GetCurrentShip()) LV += localShip->GetVelocity();
-						TV = aimBest.target->GetVelocity();
-						if (auto const targetShip = aimBest.target->GetCurrentShip()) TV += targetShip->GetVelocity();
-					}
-					catch (...)
-					{
-						LV = { 0.f,0.f,0.f };
-						TV = { 0.f,0.f,0.f };
-					}
-				}
-				else
-				{
-					LV = { 0.f,0.f,0.f };
-					TV = { 0.f,0.f,0.f };
-				}
-				const FVector RV = TV - LV;
-				float BS;
-				if (localWeapon)
-					BS = localWeapon->WeaponParameters.AmmoParams.Velocity;
-				else
-					BS = 1.f;
-				const FVector RL = myLocation - aimBest.location;
-				const float a = RV.Size() - BS * BS;
-				const float b = (RL * RV * 2.f).Sum();
-				const float c = RL.SizeSquared();
-				const float D = b * b - 4 * a * c;
-				if (D > 0)
-				{
-					const float DRoot = sqrtf(D);
-					const float x1 = (-b + DRoot) / (2 * a);
-					const float x2 = (-b - DRoot) / (2 * a);
-					if (x1 >= 0 && x1 >= x2) aimBest.location += RV * x1;
-					else if (x2 >= 0) aimBest.location += RV * x2;
-					aimBest.delta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, aimBest.location), cameraRotation);
-					auto smoothness = 1.f / aimBest.smoothness;
-					playerController->AddYawInput(aimBest.delta.Yaw * smoothness);
-					playerController->AddPitchInput(aimBest.delta.Pitch * -smoothness);
-				}
-				static byte shotFixC = 0;
-				static bool shotFixing = false;
-
-				if (cfg->aim.weapon.trigger && isWieldedWeapon && localWeapon->CanFire())
-				{
-					do {
-						if (shotFixC != 1 && !shotFixing)
-						{
-							shotFixC++;
-							break;
-						}
-						if (shotDesiredTime == 0)
-						{
-							shotDesiredTime = milliseconds_now() + 210;
-							shotFixing = true;
-						}
-						if (milliseconds_now() >= shotDesiredTime)
-						{
-							shotDesiredTime = 0;
-							shotFixing = false;
-						}
-						else
-						{
-							break;
-						}
-
-						if (!playerController->LineOfSightTo(aimBest.target, cameraLocation, false)) break;
-						INPUT inputs[6] = {};
-						ZeroMemory(inputs, sizeof(inputs));
-
-						inputs[0].type = INPUT_MOUSE;
-						inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-
-						inputs[1].type = INPUT_MOUSE;
-						inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
-
-						inputs[2].type = INPUT_KEYBOARD;
-						inputs[2].ki.wVk = 0x58; // X Key
-
-						inputs[3].type = INPUT_KEYBOARD;
-						inputs[3].ki.wVk = 0x58; // X Key
-						inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
-
-						inputs[4].type = INPUT_KEYBOARD;
-						inputs[4].ki.wVk = 0x58; // X Key
-
-						inputs[5].type = INPUT_KEYBOARD;
-						inputs[5].ki.wVk = 0x58; // X Key
-						inputs[5].ki.dwFlags = KEYEVENTF_KEYUP;
-
-						SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-						shotFixC = 0;
-					} while (false);
-				}
+				shotDesiredTime = 0;
 			}
 		}
-		else
-		{
-			shotDesiredTime = 0;
-		}
+	}
+	catch (...) {
+		tslog::debug("Exception in Main Thread. Error Code: %d.", error_code);
 	}
 }
 bool initUE4(uintptr_t world, uintptr_t objects, uintptr_t names)

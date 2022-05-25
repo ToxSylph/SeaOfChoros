@@ -9,7 +9,7 @@ class UClass;
 inline void ProcessEvent(void* obj, UFunction* function, void* parms)
 {
 	auto vtable = *reinterpret_cast<void***>(obj);
-	reinterpret_cast<void(*)(void*, UFunction*, void*)>(vtable[59])(obj, function, parms);
+	reinterpret_cast<void(*)(void*, UFunction*, void*)>(vtable[55])(obj, function, parms);
 }
 
 template<typename Fn>
@@ -460,6 +460,61 @@ struct AIslandService {
 	char pad[0x0460];
 	UIslandDataAsset* IslandDataAsset; // 0x460
 };
+
+struct FGuid
+{
+	int                                                A;                                                         // 0x0000(0x0004) (Edit, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+	int                                                B;                                                         // 0x0004(0x0004) (Edit, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+	int                                                C;                                                         // 0x0008(0x0004) (Edit, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+	int                                                D;                                                         // 0x000C(0x0004) (Edit, ZeroConstructor, SaveGame, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+};
+
+struct FSessionTemplate
+{
+	struct FString                                     TemplateName;                                              // 0x0000(0x0010) (ZeroConstructor, Protected, HasGetValueTypeHash)
+	unsigned char             SessionType;                                               // 0x0010(0x0001) (ZeroConstructor, IsPlainOldData, NoDestructor, Protected, HasGetValueTypeHash)
+	unsigned char                                      UnknownData_2Q1C[0x3];                                     // 0x0011(0x0003) MISSED OFFSET (FIX SPACE BETWEEN PREVIOUS PROPERTY)
+	int                                                MaxPlayers;                                                // 0x0014(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, Protected, HasGetValueTypeHash)
+
+};
+
+// ScriptStruct Sessions.CrewSessionTemplate
+// 0x0020 (0x0038 - 0x0018)
+struct FCrewSessionTemplate : public FSessionTemplate
+{
+	struct FString                                     MatchmakingHopper;                                         // 0x0018(0x0010) (ZeroConstructor, HasGetValueTypeHash)
+	class UClass* ShipSize;                                                  // 0x0028(0x0008) (ZeroConstructor, IsPlainOldData, NoDestructor, UObjectWrapper, HasGetValueTypeHash)
+	int                                                MaxMatchmakingPlayers;                                     // 0x0030(0x0004) (ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+	unsigned char                                      UnknownData_JPXK[0x4];                                     // 0x0034(0x0004) MISSED OFFSET (PADDING)
+
+};
+
+struct FCrew
+{
+	struct FGuid                                       CrewId;                                                   // 0x0000(0x0010) (ZeroConstructor, IsPlainOldData)
+	struct FGuid                                       SessionId;                                                // 0x0010(0x0010) (ZeroConstructor, IsPlainOldData)
+	TArray<class APlayerState*>                        Players;                                                  // 0x0020(0x0010) (ZeroConstructor)
+	struct FCrewSessionTemplate                        CrewSessionTemplate;                                      // 0x0030(0x0038)
+	struct FGuid                                       LiveryID;                                                 // 0x0068(0x0010) (ZeroConstructor, IsPlainOldData)
+	char pad[0x18];
+};
+
+struct ACrewService {
+	char pad[0x04A8];
+	TArray<FCrew> Crews; // 0x04A8
+};
+
+struct AShipService
+{
+	int GetNumShips()
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.ShipService.GetNumShips");
+		int num;
+		ProcessEvent(this, fn, &num);
+		return num;
+	}
+};
+
 struct AAthenaGameState {
 	char pad[0x05B8];
 	class AWindService* WindService;                                             // 0x05B8(0x0008) Net, ZeroConstructor, IsPlainOldData, RepNotify, NoDestructor, HasGetValueTypeHash
@@ -671,6 +726,11 @@ struct ACharacter : APawn {
 
 	bool isWeapon() {
 		static auto obj = UObject::FindClass("Class Athena.ProjectileWeapon");
+		return IsA(obj);
+	}
+
+	bool isSpyglass() {
+		static auto obj = UObject::FindClass("Class Athena.Spyglass");
 		return IsA(obj);
 	}
 
@@ -2098,26 +2158,45 @@ struct AMeleeWeapon
 	struct UMeleeWeaponDataAsset* DataAsset; //0x07C0
 };
 
-struct FProjectileShotParams
-{
-	int                                                Seed;                                                     // 0x0000(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              ProjectileDistributionMaxAngle;                           // 0x0004(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	int                                                NumberOfProjectiles;                                      // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              ProjectileMaximumRange;                                   // 0x000C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              ProjectileDamage;                                         // 0x0010(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              ProjectileDamageMultiplierAtMaximumRange;                 // 0x0014(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
+// ScriptStruct Athena.ProjectileShotParams
+// Size: 0x1c (Inherited: 0x00)
+struct FProjectileShotParams {
+	int Seed; // 0x00(0x04)
+	float ProjectileDistributionMaxAngle; // 0x04(0x04)
+	int NumberOfProjectiles; // 0x08(0x04)
+	float ProjectileMaximumRange; // 0x0c(0x04)
+	float ProjectileHitScanMaximumRange; // 0x10(0x04)
+	float ProjectileDamage; // 0x14(0x04)
+	float ProjectileDamageMultiplierAtMaximumRange; // 0x18(0x04)
 };
 
-struct FWeaponProjectileParams
-{
-	float                                              Damage;                                                   // 0x0000(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              DamageMultiplierAtMaximumRange;                           // 0x0004(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              LifeTime;                                                 // 0x0008(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              TrailFadeOutTime;                                         // 0x000C(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	float                                              Velocity;                                                 // 0x0010(0x0004) (Edit, BlueprintVisible, ZeroConstructor, IsPlainOldData)
-	char pad_78[0x94];
+// ScriptStruct Athena.WeaponProjectileParams
+// Size: 0xc0 (Inherited: 0x00)
+struct FWeaponProjectileParams {
+	float Damage; // 0x00(0x04)
+	float DamageMultiplierAtMaximumRange; // 0x04(0x04)
+	float LifeTime; // 0x08(0x04)
+	float TrailFadeOutTime; // 0x0c(0x04)
+	float Velocity; // 0x10(0x04)
+	float TimeBeforeApplyingGravity; // 0x14(0x04)
+	float DownForceVelocityFractionPerSecond; // 0x18(0x04)
+	float VelocityDampeningPerSecond; // 0x1c(0x04)
+	struct FLinearColor Color; // 0x20(0x10)
+	struct UClass* ProjectileId; // 0x30(0x08)
+	char HealthChangeReason; // 0x38(0x01)UWorld
+	char UnknownData_39[0x3]; // 0x39(0x03)
+	char UnknownData_3C[0x68]; // 0x3C(0x68)
+	int SuggestedMaxSimulationIterations; // 0xa4(0x04)
+	float SuggestedMinTickTimeSecs; // 0xa8(0x04)
+	float SuggestedMaxSimulationTimeStep; // 0xac(0x04)
+	float HitScanTrailUpdateModifier; // 0xb0(0x04)
+	float HitScanTrailFadeOutTime; // 0xb4(0x04)
+	float HitScanTrailGrowthSpeed; // 0xb8(0x04)
+	char UnknownData_BC[0x4]; // 0xbc(0x04)
 };
 
+// ScriptStruct Athena.ProjectileWeaponParameters
+// Size: 0x1f8 (Inherited: 0x00)
 struct FProjectileWeaponParameters {
 	int AmmoClipSize; // 0x00(0x04)
 	int AmmoCostPerShot; // 0x04(0x04)
@@ -2125,39 +2204,43 @@ struct FProjectileWeaponParameters {
 	float IntoAimingDuration; // 0x0c(0x04)
 	float RecoilDuration; // 0x10(0x04)
 	float ReloadDuration; // 0x14(0x04)
-	struct FProjectileShotParams HipFireProjectileShotParams; // 0x18(0x18)
-	struct FProjectileShotParams AimDownSightsProjectileShotParams; // 0x30(0x18)
-	int Seed; // 0x48(0x04)
-	float ProjectileDistributionMaxAngle; // 0x4c(0x04)
-	int NumberOfProjectiles; // 0x50(0x04)
-	float ProjectileMaximumRange; // 0x54(0x04)
-	float ProjectileDamage; // 0x58(0x04)
-	float ProjectileDamageMultiplierAtMaximumRange; // 0x5c(0x04)
-	struct UClass* DamagerType; // 0x60(0x08)
-	struct UClass* ProjectileId; // 0x68(0x08)
-	struct FWeaponProjectileParams AmmoParams; // 0x70(0xa8)
-	bool UsesScope; // 0x118(0x01)
-	char UnknownData_119[0x3]; // 0x119(0x03)
-	float ZoomedRecoilDurationIncrease; // 0x11c(0x04)
-	float SecondsUntilZoomStarts; // 0x120(0x04)
-	float SecondsUntilPostStarts; // 0x124(0x04)
-	float WeaponFiredAINoiseRange; // 0x128(0x04)
-	float MaximumRequestPositionDelta; // 0x12c(0x04)
-	float MaximumRequestAngleDelta; // 0x130(0x04)
-	float TimeoutTolerance; // 0x134(0x04)
-	float AimingMoveSpeedScalar; // 0x138(0x04)
-	char AimSensitivitySettingCategory; // 0x13c(0x01)
-	char UnknownData_13D[0x3]; // 0x13d(0x03)
-	float InAimFOV; // 0x140(0x04)
-	float BlendSpeed; // 0x144(0x04)
-	struct UWwiseEvent* DryFireSfx; // 0x148(0x08)
-	struct FName RumbleTag; // 0x160(0x08)
-	bool KnockbackEnabled; // 0x168(0x01)
-	char UnknownData_169[0x3]; // 0x169(0x03)
-	bool StunEnabled; // 0x1bc(0x01)
-	char UnknownData_1BD[0x3]; // 0x1bd(0x03)
-	float StunDuration; // 0x1c0(0x04)
-	struct FVector TargetingOffset; // 0x1c4(0x0c)
+	struct FProjectileShotParams HipFireProjectileShotParams; // 0x18(0x1c)
+	struct FProjectileShotParams AimDownSightsProjectileShotParams; // 0x34(0x1c)
+	int Seed; // 0x50(0x04)
+	float ProjectileDistributionMaxAngle; // 0x54(0x04)
+	int NumberOfProjectiles; // 0x58(0x04)
+	float ProjectileMaximumRange; // 0x5c(0x04)
+	float ProjectileHitScanMaximumRange; // 0x60(0x04)
+	float ProjectileDamage; // 0x64(0x04)
+	float ProjectileDamageMultiplierAtMaximumRange; // 0x68(0x04)
+	char UnknownData_6C[0x4]; // 0x6c(0x04)
+	struct UClass* DamagerType; // 0x70(0x08)
+	struct UClass* ProjectileId; // 0x78(0x08)
+	struct FWeaponProjectileParams AmmoParams; // 0x80(0xc0)
+	bool UsesScope; // 0x140(0x01)
+	char UnknownData_141[0x3]; // 0x141(0x03)
+	float ZoomedRecoilDurationIncrease; // 0x144(0x04)
+	float SecondsUntilZoomStarts; // 0x148(0x04)
+	float SecondsUntilPostStarts; // 0x14c(0x04)
+	float WeaponFiredAINoiseRange; // 0x150(0x04)
+	float MaximumRequestPositionDelta; // 0x154(0x04)
+	float MaximumRequestAngleDelta; // 0x158(0x04)
+	float TimeoutTolerance; // 0x15c(0x04)
+	float AimingMoveSpeedScalar; // 0x160(0x04)
+	char AimSensitivitySettingCategory; // 0x164(0x01)
+	char UnknownData_165[0x3]; // 0x165(0x03)
+	float InAimFOV; // 0x168(0x04)
+	float BlendSpeed; // 0x16c(0x04)
+	struct UWwiseEvent* DryFireSfx; // 0x170(0x08)
+	char UnknownData_178[0x10]; // 0x178(0x10)
+	struct FName RumbleTag; // 0x188(0x08)
+	bool KnockbackEnabled; // 0x190(0x01)
+	char UnknownData_191[0x3]; // 0x191(0x03)
+	char UnknownData_194[0x50]; // 0x194(0x50)
+	bool StunEnabled; // 0x1e4(0x01)
+	char UnknownData_1E5[0x3]; // 0x1e5(0x03)
+	float StunDuration; // 0x1e8(0x04)
+	struct FVector TargetingOffset; // 0x1ec(0x0c)
 };
 
 struct AProjectileWeapon {
@@ -2177,6 +2260,6 @@ struct AProjectileWeapon {
 
 struct AMapTable
 {
-	char pad[0x04E8];
-	TArray<struct FVector2D> MapPins; // 0x04E8
+	char pad[0x04F0];
+	TArray<struct FVector2D> MapPins; // 0x04F0
 };

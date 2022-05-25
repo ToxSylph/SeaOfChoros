@@ -14,7 +14,9 @@ public:
 		struct
 		{
 			bool enable = false;
+			bool fovEnable = false;
 			float fov = 90.f;
+			float spyglassFovMul = 1.0;
 			bool oxygen = false;
 			bool crosshair = false;
 			float crosshairSize = 1.f;
@@ -81,7 +83,10 @@ public:
 				bool animals = false;
 				float animalsRenderDistance = 100.f;
 				ImVec4 animalsColor = { 1.f, 1.f, 1.f, 1.f };
-
+				bool lostCargo = false;
+				ImVec4 cluesColor = { 1.f, 1.f, 1.f, 1.f };
+				bool gsRewards = false;
+				ImVec4 gsRewardsColor = { 1.f, 1.f, 1.f, 1.f };
 			}items;
 			struct 
 			{
@@ -101,6 +106,9 @@ public:
 				bool events = false;
 				float eventsRenderDistance = 100.f;
 				ImVec4 eventsColor = { 1.f, 1.f, 1.f, 1.f };
+				bool decals = false;
+				float decalsRenderDistance = 100.f;
+				ImVec4 decalsColor = { 1.f, 1.f, 1.f, 1.f };
 			}others;
 		}esp;
 		struct
@@ -148,10 +156,11 @@ public:
 			float shipTrayThickness = 0.f;
 			float shipTrayHeight = 0.f;
 			ImVec4 shipTrayCol = { 1.f, 1.f, 1.f, 1.f };
+			bool playerList = false;
 		}game;
 		struct
 		{
-
+			bool process = false;
 			int cFont = 0;
 			int lFont = 0;
 			float nameTextRenderDistanceMax = 5000.f;

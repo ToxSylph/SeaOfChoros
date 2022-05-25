@@ -1,5 +1,8 @@
 #include "main.h"
 
+// e90000000054415541564157488d68004881ec0000000048c7450000000000488958004889700048897800458bf9458be0448bea488bf98b4500894424008b75008974240044894c2400458bc8448bc2488bd1488d4d00e800000000488bc7488d4f0048f7d8481bdb4823d9488b4b00488b01488b4000ff150000000048895d008b87000000008945004533f6
+// e9 00 00 00 00 54 41 55 41 56 41 57 48 8d 68 00 48 81 ec 00 00 00 00 48 c7 45 00 00 00 00 00 48 89 58 00 48 89 70 00 48 89 78 00 45 8b f9 45 8b e0 44 8b ea 48 8b f9 8b 45 00 89 44 24 00 8b 75 00 89 74 24 00 44 89 4c 24 00 45 8b c8 44 8b c2 48 8b d1 48 8d 4d 00 e8 00 00 00 00 48 8b c7 48 8d 4f 00 48 f7 d8 48 1b db 48 23 d9 48 8b 4b 00 48 8b 01 48 8b 40 00 ff 15 00 00 00 00 48 89 5d 00 8b 87 00 00 00 00 89 45 00 45 33 f6
+// e9 ? ? ? ? 54 41 55 41 56 41 57 48 8d 68 ? 48 81 ec ? ? ? ? 48 c7 45 ? ? ? ? ? 48 89 58 ? 48 89 70 ? 48 89 78 ? 45 8b f9 45 8b e0 44 8b ea 48 8b f9 8b 45 ? 89 44 24 ? 8b 75 ? 89 74 24 ? 44 89 4c 24 ? 45 8b c8 44 8b c2 48 8b d1 48 8d 4d ? e8 ? ? ? ? 48 8b c7 48 8d 4f ? 48 f7 d8 48 1b db 48 23 d9 48 8b 4b ? 48 8b 01 48 8b 40 ? ff 15 ? ? ? ? 48 89 5d ? 8b 87 ? ? ? ? 89 45 ? 45 33 f6
 
 BOOL WINAPI DllMain(HINSTANCE hModule, DWORD reason, LPVOID reserved)
 {
@@ -255,7 +258,9 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				if (ImGui::BeginChild("Global Client", ImVec2(0.f, 0.f), false, 0))
 				{
 					const char* crosshair[] = { "None", "Circle", "Cross" };
+					ImGui::Checkbox("Change FOV", &Config::cfg.client.fovEnable);
 					ImGui::SliderFloat("FOV Value", &Config::cfg.client.fov, 60.f, 150.f, "%.0f");
+					ImGui::SliderFloat("Spyglass FOV Factor", &Config::cfg.client.spyglassFovMul, 1.f, 25.f, "%.0f");
 					ImGui::Checkbox("Show Oxygen Level", &Config::cfg.client.oxygen);
 					ImGui::Checkbox("CrossHair", &Config::cfg.client.crosshair);
 					ImGui::SliderFloat("CH Size", &Config::cfg.client.crosshairSize, 1.f, 50.f, "%.0f");
@@ -373,8 +378,10 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Animals", &Config::cfg.esp.items.animals);
 					ImGui::SliderFloat("An. Distance", &Config::cfg.esp.items.animalsRenderDistance, 1.f, 500.f, "%.0f");
 					ImGui::ColorEdit4("An. Color", &Config::cfg.esp.items.animalsColor.x, 0);
-
-
+					ImGui::Checkbox("Lost Cargo Assist", &Config::cfg.esp.items.lostCargo);
+					ImGui::ColorEdit4("Clues Color", &Config::cfg.esp.items.cluesColor.x, 0);
+					ImGui::Checkbox("GhostShips Rewards", &Config::cfg.esp.items.gsRewards);
+					ImGui::ColorEdit4("GSR. Color", &Config::cfg.esp.items.gsRewardsColor.x, 0);
 				}
 				ImGui::EndChild();
 
@@ -399,6 +406,9 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("World Events", &Config::cfg.esp.others.events);
 					ImGui::SliderFloat("WE. Distance", &Config::cfg.esp.others.eventsRenderDistance, 1.f, 10000.f, "%.0f");
 					ImGui::ColorEdit4("WE. Color", &Config::cfg.esp.others.eventsColor.x, 0);
+					ImGui::Checkbox("Island Decals", &Config::cfg.esp.others.decals);
+					ImGui::SliderFloat("Dc. Distance", &Config::cfg.esp.others.decalsRenderDistance, 1.f, 1000.f, "%.0f");
+					ImGui::ColorEdit4("Dc. Color", &Config::cfg.esp.others.decalsColor.x, 0);
 				}
 				ImGui::EndChild();
 
@@ -479,12 +489,25 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Enable", &Config::cfg.game.enable);
 					ImGui::Checkbox("Ship Info", &Config::cfg.game.shipInfo);
 					ImGui::Checkbox("Map Pins", &Config::cfg.game.mapPins);
+					ImGui::Checkbox("Players List", &Config::cfg.game.playerList);
 					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
 					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
 					ImGui::Checkbox("Ship Trajectory", &Config::cfg.game.shipTray);
 					ImGui::SliderFloat("Traj Thickness", &Config::cfg.game.shipTrayThickness, 0.f, 100.f, "%.0f");
 					ImGui::SliderFloat("Traj Height", &Config::cfg.game.shipTrayHeight, -10.f, 20.f, "%.0f");
 					ImGui::ColorEdit4("Traj Color", &Config::cfg.game.shipTrayCol.x, 0);
+				}
+				ImGui::EndChild();
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem(ICON_FA_GLOBE "Dev"))
+			{
+				ImGui::Text("Global Dev");
+
+				if (ImGui::BeginChild("cDev", ImVec2(0.f, 0.f), true, 0))
+				{
+					ImGui::Checkbox("Last Thread Action", &Config::cfg.dev.process);
 				}
 				ImGui::EndChild();
 				ImGui::EndTabItem();
