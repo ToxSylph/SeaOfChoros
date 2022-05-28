@@ -90,6 +90,11 @@ public:
 		return WideCharToMultiByte(CP_UTF8, 0, Data, Count, name, size, nullptr, nullptr) - 1;
 	}
 
+	inline const wchar_t* wide() const
+	{
+		return Data;
+	}
+
 	inline const wchar_t* c_str() const
 	{
 		if (Data)
@@ -609,13 +614,13 @@ struct AAthenaGameState {
 };
 
 struct UItemDesc {
-	char pad[0x0028];
-	FString* Title; // 0x0028(0x38)
+	char pad[0x28];
+	FString* Title; // 0x28(0x38)
 };
 
 struct AItemInfo {
-	char pad[0x0430];
-	UItemDesc* Desc; // 0x0430(0x08)
+	char pad[0x430];
+	UItemDesc* Desc; // 0x430(0x08)
 };
 
 // Class Engine.Character
@@ -871,6 +876,12 @@ struct FFloatRange {
 	float min;
 	float pad2;
 	float max;
+};
+
+struct ACannonLoadedItemInfo
+{
+	char pad[0x758];
+	struct AItemInfo* LoadedItemInfo; // 0x758(0x08)
 };
 
 struct ACannon {

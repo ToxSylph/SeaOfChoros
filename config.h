@@ -53,6 +53,11 @@ public:
 				ImVec4 holesColor = { 1.f, 1.f, 1.f, 1.f };
 				bool skeletons = false;
 				bool ghosts = false;
+				bool shipTray = false;
+				float shipTrayThickness = 0.f;
+				float shipTrayHeight = 0.f;
+				ImVec4 shipTrayCol = { 1.f, 1.f, 1.f, 1.f };
+				bool showLadders = false;
 			}ships;
 			struct
 			{
@@ -63,6 +68,12 @@ public:
 				bool marks = false;
 				float marksRenderDistance = 100.f;
 				ImVec4 marksColor = { 1.f, 1.f, 1.f, 1.f };
+				bool decals = false;
+				bool rareNames = false;
+				char rareNamesFilter[0x64] = { 0 };
+				bool renderCenterName = false;
+				float decalsRenderDistance = 100.f;
+				ImVec4 decalsColor = { 1.f, 1.f, 1.f, 1.f };
 				bool vaults = false;
 				float vaultsRenderDistance = 100.f;
 				ImVec4 vaultsColor = { 1.f, 1.f, 1.f, 1.f };
@@ -106,9 +117,6 @@ public:
 				bool events = false;
 				float eventsRenderDistance = 100.f;
 				ImVec4 eventsColor = { 1.f, 1.f, 1.f, 1.f };
-				bool decals = false;
-				float decalsRenderDistance = 100.f;
-				ImVec4 decalsColor = { 1.f, 1.f, 1.f, 1.f };
 			}others;
 		}esp;
 		struct
@@ -126,7 +134,7 @@ public:
 				bool kegs = false;
 				bool trigger = false;
 				bool visibleOnly = false;
-				bool calcShipVel = false;
+				bool calcShipVel = true;
 			}weapon;
 			struct
 			{
@@ -152,10 +160,6 @@ public:
 			bool mapPins = false;
 			bool showSunk = false;
 			ImVec4 sunkColor = { 1.f, 1.f, 1.f, 1.f };
-			bool shipTray = false;
-			float shipTrayThickness = 0.f;
-			float shipTrayHeight = 0.f;
-			ImVec4 shipTrayCol = { 1.f, 1.f, 1.f, 1.f };
 			bool playerList = false;
 		}game;
 		struct
@@ -163,10 +167,16 @@ public:
 			bool process = false;
 			int cFont = 0;
 			int lFont = 0;
+			float renderTextSizeFactor = 1.0f;
 			float nameTextRenderDistanceMax = 5000.f;
 			float nameTextRenderDistanceMin = 45.f;
 			float pinRenderDistanceMax = 50.f;
 			float pinRenderDistanceMin = 0.f;
+
+			bool printErrorCodes = false;
+			bool debugNames = false;
+			int debugNamesTextSize = 20;
+			float debugNamesRenderDistance = 0.f;
 		}dev;
 	}cfg;
 };

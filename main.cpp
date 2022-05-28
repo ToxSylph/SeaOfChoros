@@ -204,7 +204,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 	if (g_ShowMenu)
 	{
-		ImGui::SetNextWindowSize(ImVec2(1024, 576), ImGuiCond_Once);
+		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_Once);
 		ImGui::Begin("Sea of Choros", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 		ImGuiStyle* style = &ImGui::GetStyle();
 		style->WindowPadding = ImVec2(8, 8);
@@ -268,6 +268,69 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::ColorEdit4("CH Color", &Config::cfg.client.crosshairColor.x, 0);
 					ImGui::Combo("Crosshair Type", reinterpret_cast<int*>(&Config::cfg.client.crosshairType), crosshair, IM_ARRAYSIZE(crosshair));
 				}
+
+				ImGui::Text("");
+				ImGui::Separator();
+				ImGui::Text("");
+				if (ImGui::Button("Save Settings"))
+				{
+					do {
+						wchar_t buf[MAX_PATH];
+						GetModuleFileNameW(g_hInstance, buf, MAX_PATH);
+						fs::path path = fs::path(buf).remove_filename() / ".settings";
+						auto file = CreateFileW(path.wstring().c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+						if (file == INVALID_HANDLE_VALUE) break;
+						DWORD written;
+						if (WriteFile(file, &Config::cfg, sizeof(Config::cfg), &written, 0)) ImGui::OpenPopup("##SettingsSaved");
+						CloseHandle(file);
+					} while (false);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Load Settings"))
+				{
+					do {
+						wchar_t buf[MAX_PATH];
+						GetModuleFileNameW(g_hInstance, buf, MAX_PATH);
+						fs::path path = fs::path(buf).remove_filename() / ".settings";
+						auto file = CreateFileW(path.wstring().c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+						if (file == INVALID_HANDLE_VALUE) break;
+						DWORD readed;
+						if (ReadFile(file, &Config::cfg, sizeof(Config::cfg), &readed, 0))  ImGui::OpenPopup("##SettingsLoaded");
+						CloseHandle(file);
+					} while (false);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Load Dev Settings"))
+				{
+					if (loadDevSettings())
+						ImGui::OpenPopup("##DevSettingsLoaded");
+				}
+				ImVec2 center(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+				ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+				if (ImGui::BeginPopupModal("##SettingsSaved", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
+				{
+					ImGui::Text("\nSettings Saved!\n\n");
+					ImGui::Separator();
+					if (ImGui::Button("OK", { 170.f , 0.f })) { ImGui::CloseCurrentPopup(); }
+					ImGui::EndPopup();
+				}
+				ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+				if (ImGui::BeginPopupModal("##SettingsLoaded", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
+				{
+					ImGui::Text("\nSettings Loaded!\n\n");
+					ImGui::Separator();
+					if (ImGui::Button("OK", { 170.f , 0.f })) { ImGui::CloseCurrentPopup(); }
+					ImGui::EndPopup();
+				}
+				ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+				if (ImGui::BeginPopupModal("##DevSettingsLoaded", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
+				{
+					ImGui::Text("\nDeveloper Settings Loaded!\n\n");
+					ImGui::Separator();
+					if (ImGui::Button("OK", { 170.f , 0.f })) { ImGui::CloseCurrentPopup(); }
+					ImGui::EndPopup();
+				}
+
 				ImGui::EndChild();
 
 				ImGui::EndTabItem();
@@ -322,7 +385,11 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Show Holes", &Config::cfg.esp.ships.holes);
 					ImGui::Checkbox("Skeletons", &Config::cfg.esp.ships.skeletons);
 					ImGui::Checkbox("Ghost Ships", &Config::cfg.esp.ships.ghosts);
-
+					ImGui::Checkbox("Show Ladders Position", &Config::cfg.esp.ships.showLadders);
+					ImGui::Checkbox("Ship Trajectory", &Config::cfg.esp.ships.shipTray);
+					ImGui::SliderFloat("Traj Thickness", &Config::cfg.esp.ships.shipTrayThickness, 0.f, 1000.f, "%.0f");
+					ImGui::SliderFloat("Traj Height", &Config::cfg.esp.ships.shipTrayHeight, -10.f, 20.f, "%.0f");
+					ImGui::ColorEdit4("Traj Color", &Config::cfg.esp.ships.shipTrayCol.x, 0);
 				}
 				ImGui::EndChild();
 
@@ -353,6 +420,11 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Map Marks", &Config::cfg.esp.islands.marks);
 					ImGui::SliderFloat("Mk. Distance", &Config::cfg.esp.islands.marksRenderDistance, 1.f, 10000.f, "%.0f");
 					ImGui::ColorEdit4("Mk. Color", &Config::cfg.esp.islands.marksColor.x, 0);
+					ImGui::Checkbox("Show Rare Spots", &Config::cfg.esp.islands.rareNames);
+					ImGui::Text("Filter Keyword");
+					ImGui::InputText("Keyword", Config::cfg.esp.islands.rareNamesFilter, IM_ARRAYSIZE(Config::cfg.esp.islands.rareNamesFilter));
+					ImGui::SliderFloat("RS Distance", &Config::cfg.esp.islands.decalsRenderDistance, 1.f, 1000.f, "%.0f");
+					ImGui::ColorEdit4("RS Color", &Config::cfg.esp.islands.decalsColor.x, 0);
 					ImGui::Checkbox("Vaults", &Config::cfg.esp.islands.vaults);
 					ImGui::SliderFloat("V. Distance", &Config::cfg.esp.islands.vaultsRenderDistance, 1.f, 10000.f, "%.0f");
 					ImGui::ColorEdit4("V. Color", &Config::cfg.esp.islands.vaultsColor.x, 0);
@@ -406,9 +478,6 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("World Events", &Config::cfg.esp.others.events);
 					ImGui::SliderFloat("WE. Distance", &Config::cfg.esp.others.eventsRenderDistance, 1.f, 10000.f, "%.0f");
 					ImGui::ColorEdit4("WE. Color", &Config::cfg.esp.others.eventsColor.x, 0);
-					ImGui::Checkbox("Island Decals", &Config::cfg.esp.others.decals);
-					ImGui::SliderFloat("Dc. Distance", &Config::cfg.esp.others.decalsRenderDistance, 1.f, 1000.f, "%.0f");
-					ImGui::ColorEdit4("Dc. Color", &Config::cfg.esp.others.decalsColor.x, 0);
 				}
 				ImGui::EndChild();
 
@@ -434,14 +503,13 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Enable", &Config::cfg.aim.weapon.enable);
 					ImGui::SliderFloat("Pitch", &Config::cfg.aim.weapon.fPitch, 1.f, 100.f, "%.0f");
 					ImGui::SliderFloat("Yaw", &Config::cfg.aim.weapon.fYaw, 1.f, 100.f, "%.0f");
-					ImGui::SliderFloat("Smoothness", &Config::cfg.aim.weapon.smooth, 1.f, 100.f, "%.0f");
+					ImGui::SliderFloat("Smoothness", &Config::cfg.aim.weapon.smooth, 1.f, 10.f, "%.0f");
 					ImGui::SliderFloat("Height", &Config::cfg.aim.weapon.height, 1.f, 100.f, "%.0f");
 					ImGui::Checkbox("Players", &Config::cfg.aim.weapon.players);
 					ImGui::Checkbox("Skeletons", &Config::cfg.aim.weapon.skeletons);
 					ImGui::Checkbox("Gunpowder", &Config::cfg.aim.weapon.kegs);
 					ImGui::Checkbox("Instant Shot", &Config::cfg.aim.weapon.trigger);
 					ImGui::Checkbox("Visible Only", &Config::cfg.aim.weapon.visibleOnly);
-					ImGui::Checkbox("Calc Ship Vel", &Config::cfg.aim.weapon.calcShipVel);
 
 				}
 				ImGui::EndChild();
@@ -492,22 +560,22 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Players List", &Config::cfg.game.playerList);
 					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
 					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
-					ImGui::Checkbox("Ship Trajectory", &Config::cfg.game.shipTray);
-					ImGui::SliderFloat("Traj Thickness", &Config::cfg.game.shipTrayThickness, 0.f, 100.f, "%.0f");
-					ImGui::SliderFloat("Traj Height", &Config::cfg.game.shipTrayHeight, -10.f, 20.f, "%.0f");
-					ImGui::ColorEdit4("Traj Color", &Config::cfg.game.shipTrayCol.x, 0);
 				}
 				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
 
-			if (ImGui::BeginTabItem(ICON_FA_GLOBE "Dev"))
+			if (ImGui::BeginTabItem(ICON_FA_WRENCH "Dev"))
 			{
 				ImGui::Text("Global Dev");
 
 				if (ImGui::BeginChild("cDev", ImVec2(0.f, 0.f), true, 0))
 				{
-					ImGui::Checkbox("Last Thread Action", &Config::cfg.dev.process);
+					ImGui::Checkbox("Print errors codes in console", &Config::cfg.dev.printErrorCodes);
+					ImGui::SliderFloat("Modify Global Text Size", &Config::cfg.dev.renderTextSizeFactor, 0.1f, 3.0f, "%.2f");
+					ImGui::Checkbox("Show Debug Names", &Config::cfg.dev.debugNames);
+					ImGui::SliderInt("Debug Names Text Size", &Config::cfg.dev.debugNamesTextSize, 1, 50);
+					ImGui::SliderFloat("Debug Names Render Distance", &Config::cfg.dev.debugNamesRenderDistance, 1.f, 1000.f, "%.0f");
 				}
 				ImGui::EndChild();
 				ImGui::EndTabItem();

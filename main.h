@@ -5,6 +5,7 @@
 
 #include "engine.h"
 #include <vector>
+#include <filesystem>
 
 #pragma comment(lib, "HookLib/Hooklib.lib")
 #pragma comment(lib, "HookLib/Zydis.lib")
@@ -13,6 +14,7 @@ constexpr tslog::level LOG_LEVEL_TARGET = tslog::level::VERBOSE; // { 0:VERBOSE,
 constexpr bool SHOULD_ALLOC_CONSOLE = true;
 
 #define safe_release(x) if(x) { x->Release(); x = nullptr; }
+namespace fs = std::filesystem;
 
 static DWORD mSize = 0;
 static uintptr_t dxgi = NULL;

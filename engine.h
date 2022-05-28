@@ -38,6 +38,7 @@ uintptr_t milliseconds_now();
 Vector2 RotatePoint(Vector2 pointToRotate, Vector2 centerPoint, float angle, bool angleInRadians = false);
 bool raytrace(UWorld* world, const struct FVector& start, const struct FVector& end, struct FHitResult* hit);
 FVector pickHoleToAim(AHullDamage* damage, const FVector& localLoc);
+bool loadDevSettings();
 
 int getMapNameCode(char* name);
 std::string getIslandNameByCode(int code);

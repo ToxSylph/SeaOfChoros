@@ -122,8 +122,10 @@ void render(ImDrawList* drawList)
 			float best = FLT_MAX;
 			float smoothness = 1.f;
 		} aimBest;
+
 		aimBest.target = nullptr;
 		aimBest.best = FLT_MAX;
+
 
 		error_code = 2;
 		auto& io = ImGui::GetIO();
@@ -243,35 +245,45 @@ void render(ImDrawList* drawList)
 		{
 			if (cfg->aim.cannon.enable && attachObject && attachObject->isCannon())
 			{
-				error_code = 801;
-				if (GetAsyncKeyState(VK_F5) & 1)
+				auto cannonObj = reinterpret_cast<ACannon*>(attachObject);
+				auto loaded_item = reinterpret_cast<ACannonLoadedItemInfo*>(attachObject);
+
+				if (loaded_item->LoadedItemInfo)
 				{
-					if (cfg->aim.cannon.chains)
-					{
-						cfg->aim.cannon.chains = false;
-					}
-					else
-					{
+					std::wstring loaded_name = loaded_item->LoadedItemInfo->Desc->Title->wide();
+					if (loaded_name.find(L"Disparo") != std::wstring::npos || loaded_name.find(L"Chain") != std::wstring::npos)
 						cfg->aim.cannon.chains = true;
-						cfg->aim.cannon.deckshots = false;
-					}
-				}
-				if (GetAsyncKeyState(VK_F6) & 1)
-				{
-					if (cfg->aim.cannon.deckshots)
-					{
-						cfg->aim.cannon.deckshots = false;
-					}
+					else if (loaded_name.find(L"Jugador") != std::wstring::npos || loaded_name.find(L"Player") != std::wstring::npos)
+						cfg->aim.cannon.deckshots = true;
 					else
 					{
-						cfg->aim.cannon.deckshots = true;
 						cfg->aim.cannon.chains = false;
+						cfg->aim.cannon.deckshots = false;
 					}
+					char bufff[0x64];
+					ZeroMemory(bufff, sizeof(bufff));
+					sprintf(bufff, "%ws", loaded_name.c_str());
+					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 225.f), ImColor(255, 255, 255, 255), bufff, 0, 0.0f, 0);
 				}
-				if (GetAsyncKeyState(VK_F8) & 1)
+
+				error_code = 801;
+				if (GetAsyncKeyState(VK_F1) & 1)
 				{
-					cfg->aim.cannon.lowAim != cfg->aim.cannon.lowAim;
+					cfg->aim.cannon.chains = !cfg->aim.cannon.chains;
+					if (cfg->aim.cannon.chains)
+						cfg->aim.cannon.deckshots = false;
 				}
+				if (GetAsyncKeyState(VK_F2) & 1)
+				{
+					cfg->aim.cannon.deckshots = !cfg->aim.cannon.deckshots;
+					if (cfg->aim.cannon.deckshots)
+						cfg->aim.cannon.chains = false;
+				}
+				if (GetAsyncKeyState(VK_F3) & 1)
+				{
+					cfg->aim.cannon.lowAim = !cfg->aim.cannon.lowAim;
+				}
+
 
 				int cannonlocalsets = 0;
 
@@ -364,46 +376,41 @@ void render(ImDrawList* drawList)
 			}
 			if (isWieldedWeapon)
 			{
-				int localsets = 0;
-				if (cfg->aim.weapon.trigger)
-				{
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Instant Shoot + FR", 0, 0.0f, 0);
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Instant Shoot + FR", 0, 0.0f, 0);
-					localsets++;
-				}
-				if (cfg->aim.weapon.visibleOnly)
-				{
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Visible Only", 0, 0.0f, 0);
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Visible Only", 0, 0.0f, 0);
-					localsets++;
-				}
-				if (cfg->aim.weapon.players)
-				{
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Player Aimbot", 0, 0.0f, 0);
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Player Aimbot", 0, 0.0f, 0);
-					localsets++;
-				}
-				if (cfg->aim.weapon.skeletons)
-				{
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Skeletons Aimbot", 0, 0.0f, 0);
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Skeletons Aimbot", 0, 0.0f, 0);
-					localsets++;
-				}
-				if (cfg->aim.weapon.kegs)
-				{
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
-					localsets++;
-				}
-				if (cfg->aim.weapon.calcShipVel)
-				{
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1616.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Calculate Ships Velocity", 0, 0.0f, 0);
-					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1615.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Calculate Ships Velocity", 0, 0.0f, 0);
-				}
-				if (ImGui::IsKeyPressed(VK_F8))
-				{
-					cfg->aim.weapon.calcShipVel != cfg->aim.weapon.calcShipVel;
-				}
+				do {
+					if (attachObject && attachObject->isCannon()) break;
+
+					int localsets = 0;
+					if (cfg->aim.weapon.trigger)
+					{
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Instant Shoot + FR", 0, 0.0f, 0);
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Instant Shoot + FR", 0, 0.0f, 0);
+						localsets++;
+					}
+					if (cfg->aim.weapon.visibleOnly)
+					{
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Visible Only", 0, 0.0f, 0);
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Visible Only", 0, 0.0f, 0);
+						localsets++;
+					}
+					if (cfg->aim.weapon.players)
+					{
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Player Aimbot", 0, 0.0f, 0);
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Player Aimbot", 0, 0.0f, 0);
+						localsets++;
+					}
+					if (cfg->aim.weapon.skeletons)
+					{
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Skeletons Aimbot", 0, 0.0f, 0);
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Skeletons Aimbot", 0, 0.0f, 0);
+						localsets++;
+					}
+					if (cfg->aim.weapon.kegs)
+					{
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
+						localsets++;
+					}
+				} while (false);
 			}
 		}
 		if (cfg->game.enable)
@@ -525,11 +532,19 @@ void render(ImDrawList* drawList)
 				}
 				catch (...)
 				{
-					tslog::log("There is an exception occurring in Show Game Server Players");
+					if (cfg->dev.printErrorCodes)
+						tslog::debug("Exception in Render Thread. Error Code: 111.");
+					ImGui::End();
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+					ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+					return;
 				}
 			}
 		}
 
+		static int rareSpotsCounter = 0;
+		rareSpotsCounter = 0;
 		for (UINT32 i = 0; i < levels.Count; i++)
 		{
 			error_code = 12;
@@ -542,6 +557,23 @@ void render(ImDrawList* drawList)
 				if (!actor)
 					continue;
 
+				if (cfg->dev.debugNames)
+				{
+					error_code = 121;
+					const FVector location = actor->K2_GetActorLocation();
+					const float dist = myLocation.DistTo(location) * 0.01f;
+					FVector2D screen;
+					if (dist <= cfg->dev.debugNamesRenderDistance)
+					{
+						if (playerController->ProjectWorldLocationToScreen(location, screen))
+						{
+							char buf[0x64];
+							ZeroMemory(buf, sizeof(buf));
+							sprintf_s(buf, sizeof(buf), actor->GetName().c_str());
+							RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, cfg->dev.debugNamesTextSize);
+						}
+					}
+				}
 				if (cfg->esp.enable)
 				{
 					error_code = 13;
@@ -712,6 +744,63 @@ void render(ImDrawList* drawList)
 								}
 							}
 						}
+						// @Craftexperts
+						if (cfg->esp.ships.shipTray)
+						{
+							error_code = 42;
+							if (actor->isShip())
+							{
+								try
+								{
+									if (actor->isFarShip() || actor->compareName("AISmall") || actor->compareName("AILarge") || actor->isGhostShip()) continue;
+
+									AActor* ship = reinterpret_cast<AActor*>(actor);
+									auto angular_velocity = ship->ReplicatedMovement.AngularVelocity;
+									auto tangential_velocity = ship->ReplicatedMovement.LinearVelocity;
+									tangential_velocity.Z = 0;
+									auto speed = FVector(tangential_velocity.X, tangential_velocity.Y, 0).Size();
+
+									float const pi = 3.14159f;
+									auto yaw_degrees = FVector(0, 0, angular_velocity.Z).Size();
+									auto yaw_radians = (yaw_degrees * pi) / 180;
+
+									auto turn_radius = speed / yaw_radians;
+									bool left = angular_velocity.Z > 0.f;
+									auto right = ship->GetActorRightVector(); right.Z = 0;
+									auto rotated_center_unit = left ? right : right * -1;
+									auto actor_location = actor->K2_GetActorLocation();
+									actor_location.Z += cfg->esp.ships.shipTrayHeight * 100.f;
+									auto center_of_rotation = (rotated_center_unit * turn_radius) + actor_location;
+									FLinearColor color = FLinearColor(cfg->esp.ships.shipTrayCol.x, cfg->esp.ships.shipTrayCol.y, cfg->esp.ships.shipTrayCol.z, cfg->esp.ships.shipTrayCol.w);
+									UKismetSystemLibrary::DrawDebugCircle(ship, center_of_rotation, turn_radius, 180, color, 0.f, cfg->esp.ships.shipTrayThickness, { 1,0,0 }, { 0,1,0 }, false);
+								}
+								catch (...) {
+									if (cfg->dev.printErrorCodes)
+										tslog::debug("Exception in Render Thread. Error Code: 42.");
+									return;
+								}
+							}
+						}
+
+						if (cfg->esp.ships.showLadders)
+						{
+							error_code = 191;
+							const FVector location = actor->K2_GetActorLocation();
+							const float dist = myLocation.DistTo(location) * 0.01f;
+							if (dist > 150.f) continue;
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								char buf[0x64];
+								ZeroMemory(buf, sizeof(buf));
+								if (actor->compareName("ShipLadder_"))
+								{
+									sprintf_s(buf, sizeof(buf), "Ship Ladder [%.0fm]", dist);
+									RenderText(drawList, buf, screen, { 1.f, 1.f, 0.f, 1.f }, dist);
+
+								}
+							}
+						}
 					}
 
 					if (cfg->esp.islands.marks && actor->isXMarkMap())
@@ -791,7 +880,11 @@ void render(ImDrawList* drawList)
 								}
 							}
 						}
-						catch (...) {}
+						catch (...) {
+							if (cfg->dev.printErrorCodes)
+								tslog::debug("Exception in Render Thread. Error Code: 20.");
+							return;
+						}
 
 					}
 
@@ -844,6 +937,64 @@ void render(ImDrawList* drawList)
 								}
 							}
 						}
+						if (cfg->esp.islands.decals)
+						{
+							const FVector location = actor->K2_GetActorLocation();
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								auto type = actor->GetName();
+								const float dist = myLocation.DistTo(location) * 0.01f;
+								if (dist > cfg->esp.islands.decalsRenderDistance) continue;
+								char buf[0x64];
+								ZeroMemory(buf, sizeof(buf));
+								if (actor->compareName("_civ_decal_")) {
+									ZeroMemory(buf, sizeof(buf));
+									sprintf_s(buf, sizeof(buf), "Decal %.0fm", dist);
+									RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 15);
+								}
+							}
+						}
+						if (cfg->esp.islands.rareNames)
+						{
+							const FVector location = actor->K2_GetActorLocation();
+							FVector2D screen;
+							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							{
+								const float dist = myLocation.DistTo(location) * 0.01f;
+								if (dist > cfg->esp.islands.decalsRenderDistance) continue;
+								std::string actorName = actor->GetName();
+
+								if (actorName.starts_with("the"))
+								{
+									char tmpBuf[0x64];
+									int filterSize = sprintf_s(tmpBuf, sizeof(tmpBuf), cfg->esp.islands.rareNamesFilter);
+									if (filterSize == 0 || (filterSize > 0 && actor->compareName(tmpBuf)))
+									{
+										char buf[0x64];
+										ZeroMemory(buf, sizeof(buf));
+										char bufx[0x64];
+										ZeroMemory(bufx, sizeof(bufx));
+										if (screen.X < io.DisplaySize.x * 0.5f + 50.f && screen.X > io.DisplaySize.x * 0.5f - 50.f &&
+											screen.Y < io.DisplaySize.y * 0.5f + 50.f && screen.Y > io.DisplaySize.y * 0.5f - 50.f)
+										{
+											int len = sprintf_s(buf, sizeof(buf), actorName.c_str());
+											sprintf_s(buf + len, sizeof(buf) - len, " %.0fm", dist);
+											RenderText(drawList, buf, { io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.95f - 25 * rareSpotsCounter }, cfg->esp.islands.decalsColor, 25);
+											rareSpotsCounter++;
+
+											sprintf_s(bufx, sizeof(bufx), "X %.0fm", dist);
+											RenderText(drawList, bufx, screen, cfg->esp.islands.decalsColor, 25);
+										}
+										else
+										{
+											sprintf_s(buf, sizeof(buf), "X %.0fm", dist);
+											RenderText(drawList, buf, screen, cfg->esp.islands.decalsColor, 25);
+										}
+									}
+								}
+							}
+						}
 					}
 					if (cfg->esp.items.enable)
 					{
@@ -874,6 +1025,10 @@ void render(ImDrawList* drawList)
 								else
 								{
 									RenderText(drawList, buf, screen, cfg->esp.items.color, 51.f);
+								}
+								if (actor->compareName("BP_Medallion_Moon_Proxy"))
+								{
+									drawList->AddLine({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f }, { screen.X, screen.Y }, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 0.f, 1.f)), 1);
 								}
 							}
 						}
@@ -1010,7 +1165,7 @@ void render(ImDrawList* drawList)
 									{
 										char buf[0x16];
 										sprintf_s(buf, sizeof(buf), "Mermaid [%.0fm]", dist);
-										RenderText(drawList, buf, screen, cfg->esp.others.mermaidsColor, 30);
+										RenderText(drawList, buf, screen, cfg->esp.others.mermaidsColor, 20);
 									}
 
 								}
@@ -1055,7 +1210,7 @@ void render(ImDrawList* drawList)
 							sprintf_s(buf, sizeof(buf), "Shark [%.0fm]", dist);
 							const float adjust = height * 0.05f;
 							FVector2D pos = { headPos.X, headPos.Y - adjust };
-							RenderText(drawList, buf, pos, cfg->esp.others.sharksColor, 25);
+							RenderText(drawList, buf, pos, cfg->esp.others.sharksColor, 20);
 						}
 						if (cfg->esp.others.events)
 						{
@@ -1083,24 +1238,7 @@ void render(ImDrawList* drawList)
 										sprintf_s(buf, "FOTD [%.0fm]", dist);
 									else if (actor->compareName("BP_SkellyFort"))
 										sprintf_s(buf, "Skull Fort [%.0fm]", dist);
-									RenderText(drawList, buf, screen, cfg->esp.others.eventsColor, 25);
-								}
-							}
-						}
-						if (cfg->esp.others.decals)
-						{
-							const FVector location = actor->K2_GetActorLocation();
-							FVector2D screen;
-							if (playerController->ProjectWorldLocationToScreen(location, screen))
-							{
-								auto type = actor->GetName();
-								const float dist = myLocation.DistTo(location) * 0.01f;
-								if (dist > cfg->esp.others.decalsRenderDistance) continue;
-								char buf[0x64];
-								ZeroMemory(buf, sizeof(buf));
-								if (actor->compareName("_civ_decal_")) {
-									sprintf_s(buf, "D");
-									RenderText(drawList, buf, screen, cfg->esp.others.decalsColor, 15);
+									RenderText(drawList, buf, screen, cfg->esp.others.eventsColor, 20);
 								}
 							}
 						}
@@ -1282,6 +1420,10 @@ void render(ImDrawList* drawList)
 								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 								if (i_solutions < 1)
 									break;
+
+								if (abs(high.Pitch) + abs(high.Yaw) < abs(low.Pitch) + abs(low.Yaw))
+									low = high;
+
 								low.Clamp();
 								low -= attachObject->K2_GetActorRotation();
 								low.Clamp();
@@ -1321,6 +1463,10 @@ void render(ImDrawList* drawList)
 								int i_solutions = AimAtMovingTarget(location, forward, cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 								if (i_solutions < 1)
 									break;
+
+								if (abs(high.Pitch) + abs(high.Yaw) < abs(low.Pitch) + abs(low.Yaw))
+									low = high;
+
 								low.Clamp();
 								low -= attachObject->K2_GetActorRotation();
 								low.Clamp();
@@ -1452,45 +1598,10 @@ void render(ImDrawList* drawList)
 										const float dist = myLocation.DistTo(current_map_pin_world) * 0.01f;
 										char buf[0x64];
 										sprintf_s(buf, sizeof(buf), "Map Pin [%.0fm]", dist);
-										RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 15);
+										RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 20);
 									}
 								}
 							}
-						}
-					}
-					// @Craftexperts
-					if (cfg->game.shipTray)
-					{
-						error_code = 42;
-						if (actor->isShip())
-						{
-							try
-							{
-								if (actor == localPlayerActor->GetCurrentShip())
-								{
-									AActor* ship = reinterpret_cast<AActor*>(actor);
-									auto angular_velocity = ship->ReplicatedMovement.AngularVelocity;
-									auto tangential_velocity = ship->ReplicatedMovement.LinearVelocity;
-									tangential_velocity.Z = 0;
-									auto speed = FVector(tangential_velocity.X, tangential_velocity.Y, 0).Size();
-
-									float const pi = 3.14159f;
-									auto yaw_degrees = FVector(0, 0, angular_velocity.Z).Size();
-									auto yaw_radians = (yaw_degrees * pi) / 180;
-
-									auto turn_radius = speed / yaw_radians;
-									bool left = angular_velocity.Z > 0.f;
-									auto right = ship->GetActorRightVector(); right.Z = 0;
-									auto rotated_center_unit = left ? right : right * -1;
-									auto actor_location = actor->K2_GetActorLocation();
-									actor_location.Z += cfg->game.shipTrayHeight * 100.f;
-									auto center_of_rotation = (rotated_center_unit * turn_radius) + actor_location;
-									FLinearColor color = FLinearColor(cfg->game.shipTrayCol.x, cfg->game.shipTrayCol.y, cfg->game.shipTrayCol.z, cfg->game.shipTrayCol.w);
-									UKismetSystemLibrary::DrawDebugCircle(ship, center_of_rotation, turn_radius, 180, color, 0.f, cfg->game.shipTrayThickness, { 1,0,0 }, { 0,1,0 }, false);
-
-								}
-							}
-							catch (...) {}
 						}
 					}
 				}
@@ -1542,7 +1653,7 @@ void render(ImDrawList* drawList)
 					{
 						try // Kegs exception
 						{
-							LV = localPlayerActor->GetVelocity();
+							LV = { 0.f,0.f,0.f };
 							if (auto const localShip = localPlayerActor->GetCurrentShip()) LV += localShip->GetVelocity();
 							TV = aimBest.target->GetVelocity();
 							if (auto const targetShip = aimBest.target->GetCurrentShip()) TV += targetShip->GetVelocity();
@@ -1645,7 +1756,8 @@ void render(ImDrawList* drawList)
 		}
 	}
 	catch (...) {
-		tslog::debug("Exception in Main Thread. Error Code: %d.", error_code);
+		if (cfg->dev.printErrorCodes)
+			tslog::debug("Exception in Render Thread. Error Code: %d.", error_code);
 	}
 }
 bool initUE4(uintptr_t world, uintptr_t objects, uintptr_t names)
@@ -1728,6 +1840,7 @@ void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, co
 	{
 		float fontSize = -(std::sqrt(dist + 750.f)) + 50;
 		fontSize = fClamp(fontSize, 10.f, 25.f);
+		fontSize *= cfg->dev.renderTextSizeFactor;
 		RenderText(drawList, text, ImScreen, color, fontSize);
 	}
 
@@ -1743,7 +1856,7 @@ void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, co
 		ImScreen.x -= size.x * 0.5f;
 		ImScreen.y += size.y;
 	}
-	drawList->AddText(nullptr, 20.f, ImScreen, ImGui::GetColorU32(color), text);
+	drawList->AddText(nullptr, 20.f * cfg->dev.renderTextSizeFactor, ImScreen, ImGui::GetColorU32(color), text);
 }
 
 void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, const ImVec4& color, const int fontSize, const bool centered)
@@ -1755,19 +1868,19 @@ void RenderText(ImDrawList* drawList, const char* text, const FVector2D& pos, co
 		auto size = ImGui::CalcTextSize(text);
 		ImScreen.x -= size.x * 0.5f;
 	}
-
-	drawList->AddText(nullptr, (float)fontSize, ImVec2(ImScreen.x - 1.f, ImScreen.y - 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
-	drawList->AddText(nullptr, (float)fontSize, ImVec2(ImScreen.x + 1.f, ImScreen.y + 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
-	drawList->AddText(nullptr, (float)fontSize, ImScreen, ImGui::GetColorU32(color), text);
+	float fSize = fontSize * cfg->dev.renderTextSizeFactor;
+	drawList->AddText(nullptr, fSize, ImVec2(ImScreen.x - 1.f, ImScreen.y - 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
+	drawList->AddText(nullptr, fSize, ImVec2(ImScreen.x + 1.f, ImScreen.y + 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
+	drawList->AddText(nullptr, fSize, ImScreen, ImGui::GetColorU32(color), text);
 }
 
 void RenderText(ImDrawList* drawList, const char* text, const ImVec2& screen, const ImVec4& color, const float size, const bool outlined, const bool centered)
 {
 	auto window = ImGui::GetCurrentWindow();
-
-	window->DrawList->AddText(nullptr, size, ImVec2(screen.x - 1.f, screen.y - 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
-	window->DrawList->AddText(nullptr, size, ImVec2(screen.x + 1.f, screen.y + 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
-	window->DrawList->AddText(nullptr, size, screen, ImGui::GetColorU32(color), text);
+	float fSize = size * cfg->dev.renderTextSizeFactor;
+	window->DrawList->AddText(nullptr, fSize, ImVec2(screen.x - 1.f, screen.y - 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
+	window->DrawList->AddText(nullptr, fSize, ImVec2(screen.x + 1.f, screen.y + 1.f), ImGui::GetColorU32(IM_COL32_BLACK), text);
+	window->DrawList->AddText(nullptr, fSize, screen, ImGui::GetColorU32(color), text);
 
 }
 void renderPin(ImDrawList* drawList, const ImVec2& ImScreen, const ImVec4& color, const float radius)
@@ -1949,6 +2062,75 @@ FVector pickHoleToAim(AHullDamage* damage, const FVector& localLoc)
 		}
 	}
 	return fLocation;
+}
+
+bool loadDevSettings()
+{
+	cfg->client.enable = true;
+	cfg->client.fovEnable = true;
+	cfg->client.fov = 120.f;
+	cfg->client.spyglassFovMul = 5.f;
+	cfg->client.oxygen = true;
+	cfg->client.crosshair = true;
+	cfg->client.crosshairSize = 10.f;
+	cfg->client.crosshairThickness = 2.f;
+	cfg->client.crosshairColor = { 1.f,0.f,0.f,1.f };
+	cfg->client.crosshairType = Config::Configuration::ECrosshairs::ECross;
+	cfg->esp.enable = true;
+	cfg->esp.players.enable = true;
+	cfg->esp.players.renderDistance = 2000.f;
+	cfg->esp.players.colorVisible = { 0.f,1.f,0.f,1.f };
+	cfg->esp.players.colorInvisible = { 1.f,0.f,0.f,1.f };
+	cfg->esp.players.team = false;
+	cfg->esp.players.tracers = true;
+	cfg->esp.players.tracersThickness = 1.f;
+	cfg->esp.skeletons.enable = true;
+	cfg->esp.skeletons.renderDistance = 500.f;
+	cfg->esp.skeletons.color = { 1.f,1.f,1.f,1.f };
+	cfg->esp.ships.enable = true;
+	cfg->esp.ships.renderDistance = 5000.f;
+	cfg->esp.ships.color = { 0.f,0.8f,0.f,1.f };
+	cfg->esp.ships.holes = true;
+	cfg->esp.ships.skeletons = true;
+	cfg->esp.ships.ghosts = false;
+	cfg->esp.ships.showLadders = true;
+	cfg->esp.ships.shipTray = false;
+
+	cfg->esp.islands.enable = true;
+	cfg->esp.islands.size = 5.f;
+	cfg->esp.islands.renderDistance = 1750.f;
+	cfg->esp.items.enable = true;
+	cfg->esp.items.renderDistance = 500.f;
+	cfg->esp.items.color = { 1.f,0.f,1.f,1.f };
+	cfg->esp.items.nameToggle = true;
+	cfg->esp.others.enable = false;
+
+	cfg->aim.enable = true;
+	cfg->aim.weapon.enable = true;
+	cfg->aim.weapon.fPitch = 50.f;
+	cfg->aim.weapon.fYaw = 50.f;
+	cfg->aim.weapon.smooth = 2.f;
+	cfg->aim.weapon.height = 55.f;
+	cfg->aim.weapon.players = true;
+	cfg->aim.weapon.skeletons = true;
+	cfg->aim.weapon.kegs = false;
+	cfg->aim.weapon.trigger = true;
+	cfg->aim.weapon.visibleOnly = true;
+
+	cfg->aim.cannon.enable = true;
+	cfg->aim.cannon.fPitch = 100.f;
+	cfg->aim.cannon.fYaw = 100.f;
+	cfg->aim.cannon.drawPred = true;
+	cfg->aim.cannon.instant = false;
+	
+	cfg->game.enable = true;
+	cfg->game.shipInfo = true;
+	cfg->game.mapPins = true;
+	cfg->game.playerList = true;
+
+	cfg->dev.printErrorCodes = true;
+
+	return true;
 }
 
 int getMapNameCode(char* name)
