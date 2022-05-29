@@ -1026,7 +1026,7 @@ void render(ImDrawList* drawList)
 								{
 									RenderText(drawList, buf, screen, cfg->esp.items.color, 51.f);
 								}
-								if (actor->compareName("BP_Medallion_Moon_Proxy"))
+								if (actor->compareName("BP_Medallion_"))
 								{
 									drawList->AddLine({ io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f }, { screen.X, screen.Y }, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 0.f, 1.f)), 1);
 								}
@@ -1421,8 +1421,6 @@ void render(ImDrawList* drawList)
 								if (i_solutions < 1)
 									break;
 
-								if (abs(high.Pitch) + abs(high.Yaw) < abs(low.Pitch) + abs(low.Yaw))
-									low = high;
 
 								low.Clamp();
 								low -= attachObject->K2_GetActorRotation();
@@ -1463,9 +1461,6 @@ void render(ImDrawList* drawList)
 								int i_solutions = AimAtMovingTarget(location, forward, cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 								if (i_solutions < 1)
 									break;
-
-								if (abs(high.Pitch) + abs(high.Yaw) < abs(low.Pitch) + abs(low.Yaw))
-									low = high;
 
 								low.Clamp();
 								low -= attachObject->K2_GetActorRotation();
