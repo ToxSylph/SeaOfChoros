@@ -749,6 +749,16 @@ struct ACharacter : APawn {
 		return IsA(obj);
 	}
 
+	inline bool isCookingPot() {
+		static auto obj = UObject::FindClass("Class Cooking.CookingPot");
+		return IsA(obj);
+	}
+
+	inline bool isCookableComponent() {
+		static auto obj = UObject::FindClass("Class Cooking.CookableComponent");
+		return IsA(obj);
+	}
+
 	AHullDamage* GetHullDamage() {
 		static auto fn = UObject::FindObject<UFunction>("Function Athena.Ship.GetHullDamage");
 		AHullDamage* params = nullptr;
@@ -2273,4 +2283,140 @@ struct AMapTable
 {
 	char pad[0x04F0];
 	TArray<struct FVector2D> MapPins; // 0x04F0
+};
+
+
+// Enum Cooking.ECookingSmokeFeedbackLevel
+enum class ECookingSmokeFeedbackLevel : uint8_t
+{
+	ECookingSmokeFeedbackLevel__NotCooking = 0,
+	ECookingSmokeFeedbackLevel__Raw = 1,
+	ECookingSmokeFeedbackLevel__CookedWarning = 2,
+	ECookingSmokeFeedbackLevel__Cooked = 3,
+	ECookingSmokeFeedbackLevel__BurnedWarning = 4,
+	ECookingSmokeFeedbackLevel__Burned = 5,
+	ECookingSmokeFeedbackLevel__ECookingSmokeFeedbackLevel_MAX = 6
+};
+
+template<class TEnum>
+class TEnumAsByte
+{
+public:
+	inline TEnumAsByte()
+	{
+	}
+
+	inline TEnumAsByte(TEnum _value)
+		: value(static_cast<uint8_t>(_value))
+	{
+	}
+
+	explicit inline TEnumAsByte(int32_t _value)
+		: value(static_cast<uint8_t>(_value))
+	{
+	}
+
+	explicit inline TEnumAsByte(uint8_t _value)
+		: value(_value)
+	{
+	}
+
+	inline operator TEnum() const
+	{
+		return (TEnum)value;
+	}
+
+	inline TEnum GetValue() const
+	{
+		return (TEnum)value;
+	}
+
+private:
+	uint8_t value;
+};
+
+// ScriptStruct Cooking.CookingClientRepresentation
+// 0x00A8
+struct FCookingClientRepresentation
+{
+	bool                                               Cooking;                                                  // 0x0000(0x0001) (ZeroConstructor, IsPlainOldData)
+	bool                                               HasItem;                                                  // 0x0001(0x0001) (ZeroConstructor, IsPlainOldData)
+	unsigned char                                      UnknownData00[0x6];                                       // 0x0002(0x0006) MISSED OFFSET
+	struct FText                                       CurrentCookingItemDisplayName;                            // 0x0008(0x0038)
+	class UClass* CurrentCookingItemCategory;                               // 0x0040(0x0008) (ZeroConstructor, IsPlainOldData)
+	TEnumAsByte<ECookingSmokeFeedbackLevel>  		SmokeFeedbackLevel;                                       // 0x0048(0x0001) (ZeroConstructor, IsPlainOldData)
+	unsigned char                                      UnknownData01[0x3];                                       // 0x0049(0x0003) MISSED OFFSET
+	float                                              VisibleCookedExtent;                                      // 0x004C(0x0004) (ZeroConstructor, IsPlainOldData)
+	char               VisibleMaterialSettings[0x30];                                  // 0x0050(0x0030)
+	class UMaterialInstance* OverrideMaterial;                                         // 0x0080(0x0008) (ZeroConstructor, IsPlainOldData)
+	struct FVector                                     BurnDownVector;                                           // 0x0088(0x000C) (ZeroConstructor, IsPlainOldData)
+	unsigned char                                      UnknownData02[0x4];                                       // 0x0094(0x0004) MISSED OFFSET
+	class UAnimationAsset* AnimatedPose;                                             // 0x0098(0x0008) (ZeroConstructor, IsPlainOldData)
+	struct FName                                       CurrentCookableTypeName;                                  // 0x00A0(0x0008) (ZeroConstructor, IsPlainOldData)
+};
+
+// Class Cooking.CookerComponent
+// Size: 0x248 (Inherited: 0xc8)
+struct UCookerComponent {
+	char UnknownData_C8[0xd0]; // 0x0(0xd0)
+	struct TArray<struct FStatus> StatusToApplyToContents; // 0xd0(0x10)
+	struct TArray<struct FCookerSmokeFeedbackEntry> VFXFeedback; // 0xe0(0x10)
+	struct UStaticMeshMemoryConstraintComponent* CookableStaticMeshComponent; // 0xf0(0x08)
+	struct USkeletalMeshMemoryConstraintComponent* CookableSkeletalMeshComponent; // 0xf8(0x08)
+	struct FName CookedMaterialParameterName; // 0x100(0x08)
+	struct FName BurnDownDirectionParameterName; // 0x108(0x08)
+	float PlacementVarianceAngleBound; // 0x110(0x04)
+	bool OnByDefault; // 0x114(0x01)
+	char UnknownData_115[0x3]; // 0x115(0x03)
+	struct UCookingComponentAudioParams* AudioParams; // 0x118(0x08)
+	char VfxLocation; // 0x120(0x01)
+	char UnknownData_121[0x7]; // 0x121(0x07)
+	struct AItemInfo* CurrentlyCookingItem; // 0x128(0x08)
+	struct FCookingClientRepresentation CookingState; // 0x130(0x68)
+	struct UParticleSystemComponent* SmokeParticleComponent; // 0x198(0x08)
+	struct UMaterialInstanceDynamic* VisibleCookableMaterial; // 0x1a0(0x08)
+	bool TurnedOn; // 0x1a8(0x01)
+	bool OnIsland; // 0x1a9(0x01)
+	char UnknownData_1AA[0x9e]; // 0x1aa(0x9e)
+
+	void OnRep_CookingState(struct FCookingClientRepresentation OldRepresentation); // Function Cooking.CookerComponent.OnRep_CookingState // Final|Native|Private|HasOutParms // @ game+0x360d390
+};
+
+// Class Cooking.CookingPot
+// Size: 0x5d8 (Inherited: 0x3f8)
+struct ACookingPot {
+	char UnknownData_3F8[0x400]; // 0x0(0x400)
+	struct UStaticMeshComponent* MeshComponent; // 0x400(0x08)
+	struct UActionRulesInteractableComponent* InteractableComponent; // 0x408(0x08)
+	struct UCookerComponent* CookerComponent; // 0x410(0x08)
+	float HoldToInteractTime; // 0x418(0x04)
+	char UnknownData_41C[0x4]; // 0x41c(0x04)
+	struct FText NotWieldingCookableItemTooltip; // 0x420(0x38)
+	struct FText WieldingCookableItemTooltip; // 0x458(0x38)
+	struct FText TakeItemTooltip; // 0x490(0x38)
+	struct FText CannotTakeItemTooltip; // 0x4c8(0x38)
+	struct FText MixInItemTooltip; // 0x500(0x38)
+	char UnknownData_538[0xa0]; // 0x538(0xa0)
+};
+
+
+// Class Cooking.CookableComponent
+// Size: 0x128 (Inherited: 0xc8)
+struct UCookableComponent {
+	char UnknownData_C8[0xe8]; // 0xc8(0x20)
+	struct UClass* NextCookState; // 0xe8(0x08)
+	float TimeToNextCookState; // 0xf0(0x04)
+	char UnknownData_F4[0x4]; // 0xf4(0x04)
+	struct TArray<struct FCookableComponentSmokeFeedbackTimingEntry> SmokeFeedbackLevels; // 0xf8(0x10)
+	struct UCurveFloat* VisibleCookedExtentOverTime; // 0x108(0x08)
+	float DefaultVisibleCookedExtent; // 0x110(0x04)
+	struct FName CookableTypeName; // 0x114(0x08)
+	//struct FPlayerStat CookedStat; // 0x11c(0x04)
+	//struct FPlayerStat ShipCookedStat; // 0x120(0x04)
+	char CookedStat[0x04]; // 0x11c(0x04)
+	char ShipCookedStat[0x04]; // 0x120(0x04)
+	char CookingState; // 0x124(0x01)
+	char InitialCookingState; // 0x125(0x01)
+	char RemovedCookingState; // 0x126(0x01)
+	char UnknownData_127[0x1]; // 0x127(0x01)
 };

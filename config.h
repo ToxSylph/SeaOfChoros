@@ -13,10 +13,11 @@ public:
 		};
 		struct
 		{
-			bool enable = false;
-			bool fovEnable = false;
+			bool enable = true;
+			bool fovEnable = true;
 			float fov = 90.f;
 			float spyglassFovMul = 1.0;
+			bool spyRClickMode = true;
 			bool oxygen = false;
 			bool crosshair = false;
 			float crosshairSize = 1.f;
@@ -161,6 +162,7 @@ public:
 			bool showSunk = false;
 			ImVec4 sunkColor = { 1.f, 1.f, 1.f, 1.f };
 			bool playerList = false;
+			bool cooking = false;
 		}game;
 		struct
 		{
