@@ -150,6 +150,14 @@ void render(ImDrawList* drawList)
 		int XMarksMapCount = 1;
 		static std::vector<ACharacter*> cookingPots = std::vector<ACharacter*>();
 		cookingPots.clear();
+		static std::vector<FVector> trackedSinkLocs = std::vector<FVector>();
+
+		if (engine::bClearSunkList) // mutex? pff
+		{
+			engine::bClearSunkList = false;
+			trackedSinkLocs.clear();
+		}
+
 
 		TArray<ULevel*> levels = AthenaGameViewportClient->World->Levels;
 
@@ -342,9 +350,11 @@ void render(ImDrawList* drawList)
 				}
 
 				error_code = 9;
-				auto cannon = reinterpret_cast<ACannon*>(attachObject);
+				auto cannon = reinterpret_cast<ACannonSimple*>(attachObject);
 				float gravity_scale = cannon->ProjectileGravityScale;
 				int localsets = 0;
+
+
 				if (cfg->aim.cannon.drawPred)
 				{
 					float gravity = 981.f * gravity_scale;
@@ -376,6 +386,7 @@ void render(ImDrawList* drawList)
 							else if (i >= 1)
 								drawList->AddLine({ screen_pos_prev.X, screen_pos_prev.Y }, { screen_pos.X, screen_pos.Y }, ImGui::ColorConvertFloat4ToU32(ImVec4(1.f, 0.f, 0.f, 1.f)), 1);
 							screen_pos_prev = screen_pos;
+
 						}
 					}
 				}
@@ -452,40 +463,21 @@ void render(ImDrawList* drawList)
 					drawList->AddLine({ pos.X, pos.Y }, { pos.X + (100.f * internal_water_percent), pos.Y }, 0xFF0000FF, 4);
 				}
 			}
+
+			//@mogistink
 			if (cfg->game.showSunk)
 			{
-				error_code = 11;
-				static FVector ShipSinkLocation;
-				static bool hasBeenSunk = false;
-				static bool justSunked = false;
-				auto ship = localPlayerActor->GetCurrentShip();
-
-				if (ship)
-				{
-					if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 == 100.f)
-					{
-						if (!justSunked)
-						{
-							ShipSinkLocation = ship->K2_GetActorLocation();
-							justSunked = true;
-							hasBeenSunk = true;
-						}
-					}
-					else if (ship->GetInternalWater()->GetNormalizedWaterAmount() * 100 != 100)
-					{
-						justSunked = false;
-					}
-
-				}
-				if (hasBeenSunk)
+				for (int j = 0; j < trackedSinkLocs.size(); j++)
 				{
 					FVector2D screen;
-					if (playerController->ProjectWorldLocationToScreen(ShipSinkLocation, screen))
+					FVector loc = trackedSinkLocs[j];
+					loc.Z = 0.f;
+					if (playerController->ProjectWorldLocationToScreen(loc, screen))
 					{
 
-						const int dist = myLocation.DistTo(ShipSinkLocation) * 0.01f;
+						const int dist = myLocation.DistTo(loc) * 0.01f;
 						char buf[0x64];
-						snprintf(buf, sizeof(buf), "Sinking Site [%dm]", dist);
+						snprintf(buf, sizeof(buf), "Sinking Site [%dm] [%d]", dist, (int)trackedSinkLocs.size());
 						RenderText(drawList, buf, screen, cfg->game.sunkColor, 25);
 					}
 				}
@@ -510,8 +502,8 @@ void render(ImDrawList* drawList)
 					auto crews = crewService->Crews;
 					if (crews.Data)
 					{
-						ImGui::Separator();
-						ImGui::Text("Name"); ImGui::NextColumn();
+						/*ImGui::Separator();
+						ImGui::Text("Name"); ImGui::NextColumn();*/
 						ImGui::Separator();
 						for (uint32_t i = 0; i < crews.Count; i++)
 						{
@@ -519,14 +511,47 @@ void render(ImDrawList* drawList)
 							auto players = crew.Players;
 							if (players.Data)
 							{
+								int crewMaxSize = crew.CrewSessionTemplate.MaxPlayers;
+								switch (crewMaxSize)
+								{
+								case 2:
+									ImGui::Text("Sloop");
+									break;
+								case 3:
+									ImGui::Text("Brigatine");
+									break;
+								case 4:
+									ImGui::Text("Galleon");
+									break;
+								default:
+									ImGui::Text("Ship");
+									break;
+								}
+
 								for (uint32_t k = 0; k < players.Count; k++)
 								{
 									auto& player = players[k];
-									char buf[0x64];
-									player->PlayerName.multi(buf, 0x50);
+									char buf[0x50];
+									ZeroMemory(buf, sizeof(buf));
+
+
+									int len = 0;
+									char bufName[0x50];
+									if (player->PlayerName.Count > 0)
+									{
+										player->PlayerName.multi(bufName, 0x50);
+										len = sprintf_s(buf, sizeof(buf), "%s", bufName);
+									}
+									else
+									{
+										len = sprintf_s(buf, sizeof(buf), "???");
+									}
+									//snprintf(buf + len, sizeof(buf) - len, "***"); break;
+
 									ImGui::Text(buf);
 									ImGui::NextColumn();
 								}
+								ImGui::Text("");
 								ImGui::Separator();
 							}
 						}
@@ -594,10 +619,16 @@ void render(ImDrawList* drawList)
 					{
 						if (playerController->ProjectWorldLocationToScreen(location, screen))
 						{
-							char buf[0x64];
-							ZeroMemory(buf, sizeof(buf));
-							sprintf_s(buf, sizeof(buf), actor->GetName().c_str());
-							RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, cfg->dev.debugNamesTextSize);
+							std::string actorName = actor->GetName();
+							char tmpBuf[0x64];
+							int filterSize = sprintf_s(tmpBuf, sizeof(tmpBuf), cfg->dev.debugNamesFilter);
+							if (filterSize == 0 || (filterSize > 0 && actor->compareName(tmpBuf)))
+							{
+								char buf[0x64];
+								ZeroMemory(buf, sizeof(buf));
+								sprintf_s(buf, sizeof(buf), actor->GetName().c_str());
+								RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, cfg->dev.debugNamesTextSize);
+							}
 						}
 					}
 				}
@@ -635,7 +666,8 @@ void render(ImDrawList* drawList)
 								FVector2D screen;
 								if (playerController->ProjectWorldLocationToScreen(location, screen))
 								{
-									auto const playerState = actor->PlayerState;
+									auto namedPawn = reinterpret_cast<ANamedPawn*>(actor);
+									auto const playerState = namedPawn->PlayerState;
 									if (!playerState) break;
 									const auto playerName = playerState->PlayerName;
 									if (!playerName.Data) break;
@@ -676,7 +708,7 @@ void render(ImDrawList* drawList)
 								{
 									char buf[0x64];
 									ZeroMemory(buf, sizeof(buf));
-									sprintf_s(buf, sizeof(buf), "Skeleton [%.0fm]", dist);
+									sprintf_s(buf, sizeof(buf), "AI Mob [%.0fm]", dist);
 									RenderText(drawList, buf, screen, cfg->esp.skeletons.color, dist);
 								}
 							}
@@ -791,8 +823,9 @@ void render(ImDrawList* drawList)
 										if (actor->isFarShip() || actor->compareName("AISmall") || actor->compareName("AILarge") || actor->isGhostShip()) break;
 
 										AActor* ship = reinterpret_cast<AActor*>(actor);
-										auto angular_velocity = ship->ReplicatedMovement.AngularVelocity;
-										auto tangential_velocity = ship->ReplicatedMovement.LinearVelocity;
+										auto shiprepm = reinterpret_cast<AShipReplicatedM*>(actor);
+										auto angular_velocity = shiprepm->ReplicatedMovement.AngularVelocity;
+										auto tangential_velocity = shiprepm->ReplicatedMovement.LinearVelocity;
 										tangential_velocity.Z = 0;
 										auto speed = FVector(tangential_velocity.X, tangential_velocity.Y, 0).Size();
 
@@ -838,7 +871,7 @@ void render(ImDrawList* drawList)
 								}
 							}
 						} while (false);
-						
+
 					}
 
 					if (cfg->esp.islands.marks && actor->isXMarkMap())
@@ -944,7 +977,7 @@ void render(ImDrawList* drawList)
 									sprintf_s(buf, "Vault Door [%.0fm]", dist);
 									RenderText(drawList, buf, screen, cfg->esp.islands.vaultsColor, 51.f);
 								}
-							} while (false);			
+							} while (false);
 						}
 						if (cfg->esp.islands.barrels && actor->isBarrel())
 						{
@@ -960,6 +993,51 @@ void render(ImDrawList* drawList)
 									char buf[0x64];
 									sprintf_s(buf, "B");
 									RenderText(drawList, buf, screen, cfg->esp.islands.barrelsColor, 16);
+
+									if (!cfg->esp.islands.barrelspeek) break;
+
+									AStorageContainer* barrel = (AStorageContainer*)actor;
+
+									if (barrel->StorageContainer)
+									{
+										auto cNodes = barrel->StorageContainer->ContainerNodes.ContainerNodes;
+										for (unsigned int k = 0; k < cNodes.Count; k++)
+										{
+											FStorageContainerNode node = cNodes[k];
+
+											if (node.ItemDesc)
+											{
+												UItemDescEx* itemDesc = node.ItemDesc->CreateDefaultObject<UItemDescEx>();
+
+												if (itemDesc)
+												{
+													char buf2[0x50];
+													ZeroMemory(buf2, sizeof(buf2));
+
+
+													//FString itemName = itemDesc->Description.TextData->Text;
+													std::string itemName2 = getShortName(itemDesc->GetName());
+
+
+													int len = sprintf_s(buf2, sizeof(buf2), itemName2.c_str());
+													sprintf_s(buf2 + len, sizeof(buf2) - len, " [%d]", node.NumItems);
+
+
+													screen.Y += 20;
+
+													if (cfg->esp.islands.barrelstoggle)
+													{
+														if (GetAsyncKeyState(0x52)) // R Key 
+															RenderText(drawList, buf2, screen, cfg->esp.islands.barrelsColor, 16);
+													}
+													else
+													{
+														RenderText(drawList, buf2, screen, cfg->esp.islands.barrelsColor, 16);
+													}
+												}
+											}
+										}
+									}
 								}
 							} while (false);
 						}
@@ -981,7 +1059,7 @@ void render(ImDrawList* drawList)
 										RenderText(drawList, buf, screen, cfg->esp.islands.ammoChestColor, 20);
 									}
 								}
-							} while (false);					
+							} while (false);
 						}
 						if (cfg->esp.islands.decals)
 						{
@@ -1002,7 +1080,7 @@ void render(ImDrawList* drawList)
 										RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 15);
 									}
 								}
-							} while (false);						
+							} while (false);
 						}
 						if (cfg->esp.islands.rareNames)
 						{
@@ -1062,6 +1140,7 @@ void render(ImDrawList* drawList)
 
 								if (playerController->ProjectWorldLocationToScreen(location, screen))
 								{
+									error_code = 2444;
 									char buf[0x64];
 									ZeroMemory(buf, sizeof(buf));
 
@@ -1322,7 +1401,9 @@ void render(ImDrawList* drawList)
 				{
 					if (attachObject && attachObject->isCannon() && cfg->aim.cannon.enable)
 					{
+						ACharacter* tmpCharacter = actor;
 						error_code = 32;
+
 						if (cfg->aim.cannon.chains && actor->isShip())
 						{
 							error_code = 33;
@@ -1555,25 +1636,11 @@ void render(ImDrawList* drawList)
 								}
 							} while (false);
 						}
+						actor = tmpCharacter;
 					}
 					else if (isWieldedWeapon && cfg->aim.weapon.enable)
 					{
 						do {
-
-							ACharacter* tmpCharacter = actor;
-							/*
-							if (lockedTarget != nullptr)
-							{
-								if (lockedTarget->isPlayer() && !lockedTarget->IsDead())
-								{
-									actor = lockedTarget;
-								}
-								if (lockedTarget->isSkeleton() && !lockedTarget->IsDead())
-								{
-									actor = lockedTarget;
-								}
-							}*/
-
 							error_code = 38;
 							if (cfg->aim.weapon.players && actor->isPlayer() && actor != localPlayerActor && !actor->IsDead())
 							{
@@ -1658,7 +1725,6 @@ void render(ImDrawList* drawList)
 									}
 								} while (false);
 							}
-							actor = tmpCharacter;
 						} while (false);
 					}
 				}
@@ -1674,6 +1740,8 @@ void render(ImDrawList* drawList)
 							{
 								auto maptable = reinterpret_cast<AMapTable*>(actor);
 								auto map_pins = maptable->MapPins;
+
+
 								for (int i = 0; i < map_pins.Count; i++)
 								{
 									FVector2D current_map_pin = map_pins[i];
@@ -1694,59 +1762,84 @@ void render(ImDrawList* drawList)
 							}
 						}
 					}
-				}
-				if (cfg->game.cooking)
-				{
-					error_code = 421;
-					if (actor->compareName("BP_fod_"))
+					if (cfg->game.cooking)
 					{
-						bool isInPot = false;
-						const FVector location = actor->K2_GetActorLocation();
-						const float dist = myLocation.DistTo(location) * 0.01f;
-						FVector2D screen;
-						for (int i = 0; i < cookingPots.size(); i++)
+						error_code = 421;
+						if (actor->compareName("BP_fod_"))
 						{
-							if (location.DistTo(cookingPots[i]->K2_GetActorLocation()) < 1.f)
-								isInPot = true;
-						}
-						if (isInPot && dist <= 150.f && dist >= 1.f)
-						{
-							if (playerController->ProjectWorldLocationToScreen(location, screen))
+							bool isInPot = false;
+							const FVector location = actor->K2_GetActorLocation();
+							const float dist = myLocation.DistTo(location) * 0.01f;
+							FVector2D screen;
+							for (int i = 0; i < cookingPots.size(); i++)
 							{
-								char buf[0x64];
-								ZeroMemory(buf, sizeof(buf));
-								if (actor->compareName("Raw")) {
-									sprintf_s(buf, sizeof(buf), "Cooking: Raw");
-									RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 35);
-								}
-								else if (actor->compareName("Undercooked"))
+								if (location.DistTo(cookingPots[i]->K2_GetActorLocation()) < 1.f)
+									isInPot = true;
+							}
+							if (isInPot && dist <= 150.f && dist >= 1.f)
+							{
+								if (playerController->ProjectWorldLocationToScreen(location, screen))
 								{
-									sprintf_s(buf, sizeof(buf), "Cooking: UnderCooked");
-									RenderText(drawList, buf, screen, { 0.75f, 0.75f, 0.f, 1.f }, 35);
-								}
-								else if (actor->compareName("Cooked"))
-								{
-									sprintf_s(buf, sizeof(buf), "Cooking: Cooked");
-									RenderText(drawList, buf, screen, { 0.f, 1.f, 0.f, 1.f }, 35);
-								}
-								else if (actor->compareName("Burned"))
-								{
-									sprintf_s(buf, sizeof(buf), "Cooking: Burned");
-									RenderText(drawList, buf, screen, { 1.f, 0.f, 0.f, 1.f }, 35);
-								}
-								else if (actor->compareName("Burned")) // I know
-								{
-									sprintf_s(buf, sizeof(buf), "Cooking: Burned");
-									RenderText(drawList, buf, screen, { 1.f, 0.f, 0.f, 1.f }, 35);
-								}
-								else
-								{
-									sprintf_s(buf, sizeof(buf), "Raw");
-									RenderText(drawList, buf, screen, { 1.f, 1.f, 1.f, 1.f }, 35);
+									char buf[0x64];
+									ZeroMemory(buf, sizeof(buf));
+									if (actor->compareName("Raw")) {
+										sprintf_s(buf, sizeof(buf), "Cooking: Raw");
+										RenderText(drawList, buf, screen, { 1.f,1.f,1.f,1.f }, 35);
+									}
+									else if (actor->compareName("Undercooked"))
+									{
+										sprintf_s(buf, sizeof(buf), "Cooking: UnderCooked");
+										RenderText(drawList, buf, screen, { 0.75f, 0.75f, 0.f, 1.f }, 35);
+									}
+									else if (actor->compareName("Cooked"))
+									{
+										sprintf_s(buf, sizeof(buf), "Cooking: Cooked");
+										RenderText(drawList, buf, screen, { 0.f, 1.f, 0.f, 1.f }, 35);
+									}
+									else if (actor->compareName("Burned"))
+									{
+										sprintf_s(buf, sizeof(buf), "Cooking: Burned");
+										RenderText(drawList, buf, screen, { 1.f, 0.f, 0.f, 1.f }, 35);
+									}
+									else if (actor->compareName("Burned")) // I know
+									{
+										sprintf_s(buf, sizeof(buf), "Cooking: Burned");
+										RenderText(drawList, buf, screen, { 1.f, 0.f, 0.f, 1.f }, 35);
+									}
+									else
+									{
+										sprintf_s(buf, sizeof(buf), "Raw");
+										RenderText(drawList, buf, screen, { 1.f, 1.f, 1.f, 1.f }, 35);
+									}
 								}
 							}
 						}
 					}
+					if (cfg->game.showSunk)
+					{
+						do
+						{
+							if (!actor->isShip() && !actor->isFarShip()) break;
+
+							const FVector location = actor->K2_GetActorLocation();
+							if (location.Z < -1500.f)
+							{
+								bool duplicated = false;
+								for (int i = 0; i < trackedSinkLocs.size(); i++)
+								{
+									if ((trackedSinkLocs[i].DistTo(location) * 0.01f) < 50.f)
+									{
+										duplicated = true;
+										break;
+									}
+								}
+								if (duplicated) break;
+
+								trackedSinkLocs.push_back(location);
+							}
+						} while (false);
+					}
+					
 				}
 			}
 		}
@@ -1766,7 +1859,6 @@ void render(ImDrawList* drawList)
 
 			if (GetAsyncKeyState(VK_RBUTTON))
 			{
-				//lockedTarget = aimBest.target;
 				if (attachObject && attachObject->isCannon())
 				{
 					error_code = 44;
@@ -1896,7 +1988,6 @@ void render(ImDrawList* drawList)
 			}
 			else
 			{
-				//lockedTarget = nullptr;
 				shotDesiredTime = 0;
 			}
 		}
@@ -2280,6 +2371,11 @@ bool loadDevSettings()
 	return true;
 }
 
+void ClearSunkList()
+{
+	engine::bClearSunkList = true;
+}
+
 int getMapNameCode(char* name)
 {
 	if (strstr(name, "wsp_resource_island_02_e") != NULL) // Barnacle Cay
@@ -2617,4 +2713,65 @@ std::string getIslandNameByCode(int code)
 	case 65:return "Wanderers Refuge";
 	default:return "No Island Data";
 	}
+}
+
+std::string getShortName(std::string name)
+{
+	if (name.find("cannon_ball") != std::string::npos)
+		return "Cannon Ball";
+	if (name.find("cannonball_chain_shot") != std::string::npos)
+		return "Cannon Chain";
+	if (name.find("cannonball_Grenade") != std::string::npos)
+		return "Dispersion Ball";
+	if (name.find("cannonball_cur_fire") != std::string::npos)
+		return "Fire Ball";
+	if (name.find("cannonball_cur") != std::string::npos)
+		return "Cursed Cannon Ball";
+
+	if (name.find("repair_wood") != std::string::npos)
+		return "Wood";
+
+	if (name.find("PomegranateFresh") != std::string::npos)
+		return "Granate";
+	if (name.find("CoconutFresh") != std::string::npos)
+		return "Coconut";
+	if (name.find("BananaFresh") != std::string::npos)
+		return "Banana";
+	if (name.find("PineappleFresh") != std::string::npos)
+		return "Pineapple";
+	if (name.find("MangoFresh") != std::string::npos)
+		return "Mango";
+
+	if (name.find("GrubsFresh") != std::string::npos)
+		return "Grubs";
+	if (name.find("LeechesFresh") != std::string::npos)
+		return "Leeches";
+	if (name.find("EarthwormsFresh") != std::string::npos)
+		return "Earthworms";
+
+	if (name.find("fireworks_flare") != std::string::npos)
+		return "Flare";
+	if (name.find("fireworks_rocket") != std::string::npos)
+		return "Fireworks S";
+	if (name.find("fireworks_cake") != std::string::npos)
+		return "Fireworks M";
+	if (name.find("fireworks_living") != std::string::npos)
+		return "Fireworks L";
+
+	if (name.find("MapInABarrel") != std::string::npos)
+		return "Scroll";
+
+	if (name.find("hola") != std::string::npos)
+		return "Hola";
+	if (name.find("hola") != std::string::npos)
+		return "Hola";
+	if (name.find("hola") != std::string::npos)
+		return "Hola";
+	if (name.find("hola") != std::string::npos)
+		return "Hola";
+	if (name.find("hola") != std::string::npos)
+		return "Hola";
+	if (name.find("hola") != std::string::npos)
+		return "Hola";
+	return name;
 }

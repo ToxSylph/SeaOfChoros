@@ -192,7 +192,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 	auto drawList = ImGui::GetCurrentWindow()->DrawList;
 
-	if (updateGameVars())
+	if (updateGameVars()) // 2k22, PC can hadle it
 	{
 		render(ImGui::GetCurrentWindow()->DrawList);
 	}
@@ -364,7 +364,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 				ImGui::NextColumn();
 
-				ImGui::Text("Skeletons");
+				ImGui::Text("Mobs");
 				if (ImGui::BeginChild("SkeletonsESP", ImVec2(0.f, 0.f), true, 0))
 				{
 					ImGui::Checkbox("Enable", &Config::cfg.esp.skeletons.enable);
@@ -430,6 +430,8 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderFloat("V. Distance", &Config::cfg.esp.islands.vaultsRenderDistance, 1.f, 10000.f, "%.0f");
 					ImGui::ColorEdit4("V. Color", &Config::cfg.esp.islands.vaultsColor.x, 0);
 					ImGui::Checkbox("Barrels", &Config::cfg.esp.islands.barrels);
+					ImGui::Checkbox("Peek Barrels", &Config::cfg.esp.islands.barrelspeek);
+					ImGui::Checkbox("Peek R Key Toggle", &Config::cfg.esp.islands.barrelstoggle);
 					ImGui::SliderFloat("B. Distance", &Config::cfg.esp.islands.barrelsRenderDistance, 1.f, 10000.f, "%.0f");
 					ImGui::ColorEdit4("B. Color", &Config::cfg.esp.islands.barrelsColor.x, 0);
 					ImGui::Checkbox("Ammo Chests", &Config::cfg.esp.islands.ammoChest);
@@ -552,16 +554,25 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 			if (ImGui::BeginTabItem(ICON_FA_GLOBE "Game"))
 			{
 				ImGui::Text("Global Game");
+				if (ImGui::BeginChild("Global", ImVec2(200.f, 50.f), false, 0))
+				{
+					ImGui::Checkbox("Enable", &Config::cfg.game.enable);
+
+				}
+				ImGui::EndChild();
 
 				if (ImGui::BeginChild("cGame", ImVec2(0.f, 0.f), true, 0))
 				{
-					ImGui::Checkbox("Enable", &Config::cfg.game.enable);
 					ImGui::Checkbox("Ship Info", &Config::cfg.game.shipInfo);
 					ImGui::Checkbox("Map Pins", &Config::cfg.game.mapPins);
 					ImGui::Checkbox("Players List", &Config::cfg.game.playerList);
 					ImGui::Checkbox("Cook Tracker", &Config::cfg.game.cooking);
 					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
 					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
+					if (ImGui::Button("Clear Sunk List"))
+					{
+						ClearSunkList();
+					}
 				}
 				ImGui::EndChild();
 				ImGui::EndTabItem();
@@ -569,13 +580,14 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 
 			if (ImGui::BeginTabItem(ICON_FA_WRENCH "Dev"))
 			{
-				ImGui::Text("Global Dev");
 
 				if (ImGui::BeginChild("cDev", ImVec2(0.f, 0.f), true, 0))
 				{
 					ImGui::Checkbox("Print errors codes in console", &Config::cfg.dev.printErrorCodes);
 					ImGui::SliderFloat("Modify Global Text Size", &Config::cfg.dev.renderTextSizeFactor, 0.1f, 3.0f, "%.2f");
 					ImGui::Checkbox("Show Debug Names", &Config::cfg.dev.debugNames);
+					ImGui::Text("Filter Keyword");
+					ImGui::InputText("Keyword", Config::cfg.dev.debugNamesFilter, IM_ARRAYSIZE(Config::cfg.dev.debugNamesFilter));
 					ImGui::SliderInt("Debug Names Text Size", &Config::cfg.dev.debugNamesTextSize, 1, 50);
 					ImGui::SliderFloat("Debug Names Render Distance", &Config::cfg.dev.debugNamesRenderDistance, 1.f, 1000.f, "%.0f");
 				}

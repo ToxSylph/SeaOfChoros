@@ -18,6 +18,7 @@ namespace engine
 	static AAthenaPlayerCharacter* localPlayerActor = nullptr;
 	static ULevel* persistentLevel = nullptr;
 	static Config::Configuration* cfg = &Config::cfg;
+	static bool bClearSunkList = false;
 }
 
 void render(ImDrawList* drawList);
@@ -39,6 +40,8 @@ Vector2 RotatePoint(Vector2 pointToRotate, Vector2 centerPoint, float angle, boo
 bool raytrace(UWorld* world, const struct FVector& start, const struct FVector& end, struct FHitResult* hit);
 FVector pickHoleToAim(AHullDamage* damage, const FVector& localLoc);
 bool loadDevSettings();
+void ClearSunkList();
 
 int getMapNameCode(char* name);
 std::string getIslandNameByCode(int code);
+std::string getShortName(std::string name);

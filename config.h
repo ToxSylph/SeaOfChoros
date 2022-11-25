@@ -81,6 +81,8 @@ public:
 				bool barrels = false;
 				float barrelsRenderDistance = 100.f;
 				ImVec4 barrelsColor = { 1.f, 1.f, 1.f, 1.f };
+				bool barrelspeek = false;
+				bool barrelstoggle = false;
 				bool ammoChest = false;
 				float ammoChestRenderDistance = 100.f;
 				ImVec4 ammoChestColor = { 1.f, 1.f, 1.f, 1.f };
@@ -178,6 +180,7 @@ public:
 			bool printErrorCodes = false;
 			bool debugNames = false;
 			int debugNamesTextSize = 20;
+			char debugNamesFilter[0x64] = { 0 };
 			float debugNamesRenderDistance = 0.f;
 		}dev;
 	}cfg;

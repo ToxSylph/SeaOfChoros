@@ -10,7 +10,7 @@
 #pragma comment(lib, "HookLib/Hooklib.lib")
 #pragma comment(lib, "HookLib/Zydis.lib")
 
-constexpr tslog::level LOG_LEVEL_TARGET = tslog::level::VERBOSE; // { 0:VERBOSE, 1:LOG, 2:INFO, 3:WARNINGS, 4:ERRORS, 5:CRITICAL, 6:DEBUG, 7:OFF }
+constexpr tslog::level LOG_LEVEL_TARGET = tslog::level::LOG; // { 0:VERBOSE, 1:LOG, 2:INFO, 3:WARNINGS, 4:ERRORS, 5:CRITICAL, 6:DEBUG, 7:OFF }
 constexpr bool SHOULD_ALLOC_CONSOLE = true;
 
 #define safe_release(x) if(x) { x->Release(); x = nullptr; }
