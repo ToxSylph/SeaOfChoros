@@ -354,7 +354,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Enable", &Config::cfg.esp.players.enable);
 					ImGui::SliderFloat("Distance", &Config::cfg.esp.players.renderDistance, 1.f, 2000.f, "%.0f");
 					ImGui::ColorEdit4("Visible Color", &Config::cfg.esp.players.colorVisible.x, 0);
-					ImGui::ColorEdit4("Invible Color", &Config::cfg.esp.players.colorInvisible.x, 0);
+					ImGui::ColorEdit4("Invisible Color", &Config::cfg.esp.players.colorInvisible.x, 0);
 					ImGui::Checkbox("Teammates", &Config::cfg.esp.players.team);
 					ImGui::Checkbox("Tracers", &Config::cfg.esp.players.tracers);
 					ImGui::SliderFloat("Thickness", &Config::cfg.esp.players.tracersThickness, 1.f, 10.f, "%.0f");

@@ -477,7 +477,7 @@ void render(ImDrawList* drawList)
 
 						const int dist = myLocation.DistTo(loc) * 0.01f;
 						char buf[0x64];
-						snprintf(buf, sizeof(buf), "Sinking Site [%dm] [%d]", dist, (int)trackedSinkLocs.size());
+						snprintf(buf, sizeof(buf), "Sinking Site [%dm]", dist);
 						RenderText(drawList, buf, screen, cfg->game.sunkColor, 25);
 					}
 				}

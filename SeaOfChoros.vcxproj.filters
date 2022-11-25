@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Archivos de origen">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Archivos de encabezado">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Archivos de recursos">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Vendor">
+      <UniqueIdentifier>{ff27a325-ebe0-4414-8bbd-cdab6600582b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Vendor\ImGui">
+      <UniqueIdentifier>{c4f730e3-4095-4cc8-b752-42a3e0d927ac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Vendor\HookLib">
+      <UniqueIdentifier>{25204375-750f-41d4-99e2-f02b4c2633cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de recursos\Vendor">
+      <UniqueIdentifier>{46848fce-b096-4b9b-ae2e-62b3b2433a41}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de recursos\Vendor\ImGui">
+      <UniqueIdentifier>{e88b7fc4-295a-456d-b799-a8170dbc24b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de encabezado\Vendor\tslib">
+      <UniqueIdentifier>{54c3779a-3054-4fc7-b0d9-8a5b4e5bad80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Archivos de recursos\Vendor\tslib">
+      <UniqueIdentifier>{308eb968-ddcb-4135-8cbe-5e7da45bcbc9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Archivos de recursos</Filter>
+    </ClCompile>
+    <ClCompile Include="logger.cpp">
+      <Filter>Archivos de recursos</Filter>
+    </ClCompile>
+    <ClCompile Include="include\tslib\tslib.cpp">
+      <Filter>Archivos de recursos\Vendor\tslib</Filter>
+    </ClCompile>
+    <ClCompile Include="include\ImGui\imgui.cpp">
+      <Filter>Archivos de recursos\Vendor\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="include\ImGui\imgui_draw.cpp">
+      <Filter>Archivos de recursos\Vendor\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="include\ImGui\imgui_impl_dx11.cpp">
+      <Filter>Archivos de recursos\Vendor\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="include\ImGui\imgui_impl_win32.cpp">
+      <Filter>Archivos de recursos\Vendor\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="include\ImGui\imgui_widgets.cpp">
+      <Filter>Archivos de recursos\Vendor\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="include\UE4\SDK.cpp">
+      <Filter>Archivos de recursos</Filter>
+    </ClCompile>
+    <ClCompile Include="engine.cpp">
+      <Filter>Archivos de recursos</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="main.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
+    <ClInclude Include="logger.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
+    <ClInclude Include="include\tslib\tslib.h">
+      <Filter>Archivos de encabezado\Vendor\tslib</Filter>
+    </ClInclude>
+    <ClInclude Include="include\HookLib\HookLib.h">
+      <Filter>Archivos de encabezado\Vendor\HookLib</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imconfig.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imgui.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imgui_impl_dx11.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imgui_impl_win32.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imgui_internal.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imstb_rectpack.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imstb_textedit.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ImGui\imstb_truetype.h">
+      <Filter>Archivos de encabezado\Vendor\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UE4\SDK.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
+    <ClInclude Include="engine.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
+    <ClInclude Include="cIcons.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
