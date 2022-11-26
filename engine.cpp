@@ -1499,7 +1499,7 @@ void render(ImDrawList* drawList)
 								FRotator low, high;
 								FVector acVelocity = actor->GetVelocity();
 								FVector acFVelocity = actor->GetForwardVelocity();
-								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
+								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 								if (i_solutions < 1)
 									break;
 								low.Clamp();
@@ -1531,7 +1531,7 @@ void render(ImDrawList* drawList)
 								auto cannon = reinterpret_cast<ACannon*>(attachObject);
 								float gravity_scale = cannon->ProjectileGravityScale;
 								FRotator low, high;
-								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetForwardVelocity(), low, high);
+								int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
 								if (i_solutions < 1)
 									break;
 								low.Clamp();
@@ -1548,6 +1548,7 @@ void render(ImDrawList* drawList)
 									aimBest.delta = low;
 									aimBest.best = sum;
 								}
+
 							} while (false);
 						}
 						if (cfg->aim.cannon.chains == false && actor->isShip())
