@@ -2599,3 +2599,39 @@ struct UCookableComponent {
 	char RemovedCookingState; // 0x126(0x01)
 	char UnknownData_127[0x1]; // 0x127(0x01)
 };
+
+// Class Engine.CharacterMovementComponent
+// Size: 0x590 (Inherited: 0x160)
+struct UCharacterMovementComponent {
+	char pad_00[0x160];
+	char UnknownData_160[0x18]; // 0x160(0x18)
+	struct ACharacter* CharacterOwner; // 0x178(0x08)
+	float GravityScale; // 0x180(0x04)
+	float MaxStepHeight; // 0x184(0x04)
+	float JumpZVelocity; // 0x188(0x04)
+	float JumpOffJumpZFactor; // 0x18c(0x04)
+	float WalkableFloorAngle; // 0x190(0x04)
+	float WalkableFloorZ; // 0x194(0x04)
+	char MovementMode; // 0x198(0x01)
+	char CustomMovementMode; // 0x199(0x01)
+	char UnknownData_19A[0x26]; // 0x19a(0x26)
+	float GroundFriction; // 0x1c0(0x04)
+	float MaxWalkSpeed; // 0x1c4(0x04)
+	float MaxWalkSpeedBackwards; // 0x1c8(0x04)
+	float WalkBackwardsMinAngle; // 0x1cc(0x04)
+	float WalkBackwardsMaxAngle; // 0x1d0(0x04)
+	float MaxWalkSpeedCrouched; // 0x1d4(0x04)
+	float MaxSwimSpeed; // 0x1d8(0x04)
+	float MaxFlySpeed; // 0x1dc(0x04)
+};
+
+// Class Athena.OnlineAthenaPlayerController
+// Size: 0x1618 (Inherited: 0x1550)
+struct AOnlineAthenaPlayerController {
+	char pad_00[0x1550];
+	char UnknownData_1550[0x8]; // 0x1550(0x08)
+	char LogoutNoteCompletionIdent[0x8]; // 0x1558(0x08)
+	char UnknownData_1560[0x19]; // 0x1560(0x19)
+	bool IdleDisconnectEnabled; // 0x1579(0x01)
+	char UnknownData_157A[0x9e]; // 0x157a(0x9e)
+};

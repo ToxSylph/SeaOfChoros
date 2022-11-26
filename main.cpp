@@ -567,6 +567,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Map Pins", &Config::cfg.game.mapPins);
 					ImGui::Checkbox("Players List", &Config::cfg.game.playerList);
 					ImGui::Checkbox("Cook Tracker", &Config::cfg.game.cooking);
+					ImGui::Checkbox("Disable Idle Kick", &Config::cfg.game.noIdleKick);
 					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
 					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
 					if (ImGui::Button("Clear Sunk List"))

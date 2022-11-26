@@ -165,6 +165,7 @@ public:
 			ImVec4 sunkColor = { 1.f, 1.f, 1.f, 1.f };
 			bool playerList = false;
 			bool cooking = false;
+			bool noIdleKick = false;
 		}game;
 		struct
 		{

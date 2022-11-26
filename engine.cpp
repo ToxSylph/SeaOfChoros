@@ -593,6 +593,19 @@ void render(ImDrawList* drawList)
 					}
 				}
 			}
+
+			if (reinterpret_cast<AOnlineAthenaPlayerController*>(playerController)->IdleDisconnectEnabled && cfg->game.noIdleKick)
+			{
+				reinterpret_cast<AOnlineAthenaPlayerController*>(playerController)->IdleDisconnectEnabled = false;
+			}
+
+		}
+		else
+		{
+			if (!reinterpret_cast<AOnlineAthenaPlayerController*>(playerController)->IdleDisconnectEnabled && !cfg->game.noIdleKick)
+			{
+				reinterpret_cast<AOnlineAthenaPlayerController*>(playerController)->IdleDisconnectEnabled = true;
+			}
 		}
 
 		static int rareSpotsCounter = 0;
@@ -1839,7 +1852,7 @@ void render(ImDrawList* drawList)
 							}
 						} while (false);
 					}
-					
+
 				}
 			}
 		}
