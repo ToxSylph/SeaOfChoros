@@ -17,6 +17,7 @@ public:
 			bool fovEnable = true;
 			float fov = 90.f;
 			float spyglassFovMul = 1.0;
+			float sniperFovMul = 1.0;
 			bool spyRClickMode = true;
 			bool oxygen = false;
 			bool crosshair = false;

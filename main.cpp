@@ -260,8 +260,9 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					const char* crosshair[] = { "None", "Circle", "Cross" };
 					ImGui::Checkbox("Change FOV", &Config::cfg.client.fovEnable);
 					ImGui::SliderFloat("FOV Value", &Config::cfg.client.fov, 60.f, 150.f, "%.0f");
-					ImGui::SliderFloat("Spyglass FOV Factor", &Config::cfg.client.spyglassFovMul, 1.f, 25.f, "%.0f");
 					ImGui::Checkbox("Spyglass Right Click", &Config::cfg.client.spyRClickMode);
+					ImGui::SliderFloat("Spyglass FOV Factor", &Config::cfg.client.spyglassFovMul, 1.f, 25.f, "%.0f");
+					ImGui::SliderFloat("Eye of Reach FOV Factor", &Config::cfg.client.sniperFovMul, 1.f, 25.f, "%.0f");
 					ImGui::Checkbox("Show Oxygen Level", &Config::cfg.client.oxygen);
 					ImGui::Checkbox("CrossHair", &Config::cfg.client.crosshair);
 					ImGui::SliderFloat("CH Size", &Config::cfg.client.crosshairSize, 1.f, 50.f, "%.0f");

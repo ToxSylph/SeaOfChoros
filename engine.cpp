@@ -171,19 +171,32 @@ void render(ImDrawList* drawList)
 				static std::uintptr_t desiredTimeFOV = 0;
 				if (milliseconds_now() >= desiredTimeFOV)
 				{
+					static byte pass = 0;
+					const auto spyglass = *reinterpret_cast<ASpyglass**>(&item);
 					float fov = localPlayerActor->GetTargetFOV(localPlayerActor);
 					playerController->FOV(cfg->client.fov);
 					if (fov == 17.f)
 					{
 						playerController->FOV(cfg->client.fov * 0.2f);
 					}
-					if (isWieldedSpyglass && GetAsyncKeyState(VK_LBUTTON) && cfg->client.spyRClickMode == false)
+					if (isWieldedSpyglass && GetAsyncKeyState(VK_LBUTTON) && cfg->client.spyRClickMode == false && spyglass->BlurTime > 0.51f)
 					{
 						playerController->FOV(cfg->client.fov * (1 / cfg->client.spyglassFovMul));
 					}
 					else if (isWieldedSpyglass && GetAsyncKeyState(VK_RBUTTON) && cfg->client.spyRClickMode == true)
 					{
 						playerController->FOV(cfg->client.fov * (1 / cfg->client.spyglassFovMul));
+					}
+					else if (isWieldedWeapon && GetAsyncKeyState(VK_RBUTTON))
+					{
+						pass++;
+						if (item->compareName("sniper_rifle_") && pass >= 2)
+							playerController->FOV(cfg->client.fov * (1 / cfg->client.sniperFovMul));
+
+					}
+					else
+					{
+						pass = 0;
 					}
 					desiredTimeFOV = milliseconds_now() + 100;
 				}
@@ -2319,7 +2332,8 @@ bool loadDevSettings()
 	cfg->client.enable = true;
 	cfg->client.fovEnable = true;
 	cfg->client.fov = 120.f;
-	cfg->client.spyglassFovMul = 5.f;
+	cfg->client.spyglassFovMul = 10.f;
+	cfg->client.sniperFovMul = 3.f;
 	cfg->client.spyRClickMode = true;
 	cfg->client.oxygen = true;
 	cfg->client.crosshair = true;

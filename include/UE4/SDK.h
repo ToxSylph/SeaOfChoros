@@ -2439,6 +2439,12 @@ struct FProjectileWeaponParameters {
 struct AProjectileWeapon {
 	char pad[0x7c8]; // 0
 	FProjectileWeaponParameters WeaponParameters; // 0x7c8
+	char State; // 0x9b0(0x01)
+	char UnknownData_9B1[0x3]; // 0x9b1(0x03)
+	int32_t AmmoLeft; // 0x9b4(0x04)
+	char AimSensitivityComponent[0x8]; // 0x9b8(0x08)
+	char UnknownData_9C0[0x10]; // 0x9c0(0x10)
+	char ProjectileWeaponType; // 0x9d0(0x01)
 
 	bool CanFire()
 	{
@@ -2634,4 +2640,41 @@ struct AOnlineAthenaPlayerController {
 	char UnknownData_1560[0x19]; // 0x1560(0x19)
 	bool IdleDisconnectEnabled; // 0x1579(0x01)
 	char UnknownData_157A[0x9e]; // 0x157a(0x9e)
+};
+
+// Class Athena.Spyglass
+// Size: 0x870 (Inherited: 0x780)
+struct ASpyglass {
+	char pad_00[0x780];
+	char UnknownData_780[0x10]; // 0x780(0x10)
+	char InventoryItem[0x8]; // 0x790(0x08)
+	char UsableWieldableComponent[0x8]; // 0x798(0x08)
+	char AimSensitivityComponent[0x8]; // 0x7a0(0x08)
+	char UnknownData_7A8[0x10]; // 0x7a8(0x10)
+	float NameplateVisibilityRangeExtensionFactorWhileZoomed; // 0x7b8(0x04)
+	float SecondsUntilZoomStarts; // 0x7bc(0x04)
+	float SecondsUntilPostStarts; // 0x7c0(0x04)
+	float InAimFOV; // 0x7c4(0x04)
+	float BlendSpeed; // 0x7c8(0x04)
+	char AimSpeedScaleParameters[0x8]; // 0x7cc(0x08)
+	char UnknownData_7D4[0x4]; // 0x7d4(0x04)
+	char PostProcessComponent[0x8]; // 0x7d8(0x08)
+	char BlurCurve[0x8]; // 0x7e0(0x08)
+	char UnknownData_7E8[0x38]; // 0x7e8(0x38)
+	char DynamicMaterial[0x8]; // 0x820(0x08)
+	bool TurningOn; // 0x828(0x01)
+	char UnknownData_829[0x3]; // 0x829(0x03)
+	float BlurTime; // 0x82c(0x04)
+	float BlurInDuration; // 0x830(0x04)
+	float BlurOutDuration; // 0x834(0x04)
+	char Glint[0x8]; // 0x838(0x08)
+	char MaterialParent[0x8]; // 0x840(0x08)
+	char LensNormal[0x8]; // 0x848(0x08)
+	char LensMask[0x8]; // 0x850(0x08)
+	char LensTint[0x10]; // 0x858(0x10)
+	char UnknownData_868[0x8]; // 0x868(0x08)
+
+	void SpyGlassRaisedFirstPerson(bool IsRaised); // Function Athena.Spyglass.SpyGlassRaisedFirstPerson // Event|Protected|BlueprintEvent // @ game+0x179fa40
+	void SetGlintOff(); // Function Athena.Spyglass.SetGlintOff // Native|Public|BlueprintCallable // @ game+0x11489f0
+	void ResetSpyglassEffects(); // Function Athena.Spyglass.ResetSpyglassEffects // Final|Native|Public|BlueprintCallable // @ game+0x1148200
 };
