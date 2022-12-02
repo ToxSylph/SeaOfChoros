@@ -1,14 +1,10 @@
 #pragma once
 
 #include "tslib/tslib.h"
-#include "HookLib/Hooklib.h"
 
 #include "engine.h"
 #include <vector>
 #include <filesystem>
-
-#pragma comment(lib, "HookLib/Hooklib.lib")
-#pragma comment(lib, "HookLib/Zydis.lib")
 
 constexpr tslog::level LOG_LEVEL_TARGET = tslog::level::LOG; // { 0:VERBOSE, 1:LOG, 2:INFO, 3:WARNINGS, 4:ERRORS, 5:CRITICAL, 6:DEBUG, 7:OFF }
 constexpr bool SHOULD_ALLOC_CONSOLE = true;

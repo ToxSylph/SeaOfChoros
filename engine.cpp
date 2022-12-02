@@ -621,6 +621,14 @@ void render(ImDrawList* drawList)
 			}
 		}
 
+		if (cfg->dev.printRPCCalls && engine::oProcessEvent == nullptr)
+		{
+			hookProcessEvent();
+		}
+		else if (!cfg->dev.printRPCCalls && engine::oProcessEvent != nullptr)
+		{
+			unhookProcessEvent();
+		}
 		static int rareSpotsCounter = 0;
 		rareSpotsCounter = 0;
 		for (UINT32 i = 0; i < levels.Count; i++)
@@ -2032,6 +2040,7 @@ bool initUE4(uintptr_t world, uintptr_t objects, uintptr_t names)
 		UObject::GObjects = reinterpret_cast<decltype(UObject::GObjects)>(objects);
 		FName::GNames = *reinterpret_cast<decltype(FName::GNames)*>(names);
 		AthenaGameViewportClient = UObject::FindObject<UAthenaGameViewportClient>("AthenaGameViewportClient Transient.AthenaGameEngine_1.AthenaGameViewportClient_1");
+
 		if (!checkSDKObjects())
 			return false;
 	}
@@ -2326,6 +2335,46 @@ FVector pickHoleToAim(AHullDamage* damage, const FVector& localLoc)
 		}
 	}
 	return fLocation;
+}
+
+//@Grab
+void processhk(void* Object, UFunction* Function, void* Params)
+{
+	if (FunctionIndex::BoxedRpcDispatcherComponent == -1)
+		if (Function->GetFullName().compare("Function AthenaEngine.BoxedRpcDispatcherComponent.Server_SendRpc") == 0)
+			FunctionIndex::BoxedRpcDispatcherComponent = Function->InternalIndex;
+
+	if (Function->InternalIndex == FunctionIndex::BoxedRpcDispatcherComponent)
+	{
+		auto result = (FSerialisedRpc*)Params;
+		char buf[0x64];
+		ZeroMemory(buf, sizeof(buf));
+		int len = sprintf_s(buf, sizeof(buf), "Name: %s", result->ContentsType->GetFullName().c_str());
+		if (len > 6)
+			tslog::debug(buf);
+	} // TODO: learn how to faqin deserialize UScriptStruct
+	return oProcessEvent(Object, Function, Params);
+}
+
+void hookProcessEvent()
+{
+	engine::oProcessEvent = nullptr;
+	if (AthenaGameViewportClient)
+	{
+		DWORD64** ProcessEvent = *(DWORD64***)(AthenaGameViewportClient)+55;
+		engine::oProcessEvent = (fnProcessEvent)hook((void*)(*ProcessEvent), processhk);
+	}
+}
+void unhookProcessEvent()
+{
+	if (engine::oProcessEvent) {
+		unhook((void*)engine::oProcessEvent);
+		engine::oProcessEvent = nullptr;
+	}
+}
+void EngineShutdown()
+{
+	unhookProcessEvent();
 }
 
 bool loadDevSettings()

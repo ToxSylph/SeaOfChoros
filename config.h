@@ -180,6 +180,7 @@ public:
 			float pinRenderDistanceMin = 0.f;
 
 			bool printErrorCodes = false;
+			bool printRPCCalls = false;
 			bool debugNames = false;
 			int debugNamesTextSize = 20;
 			char debugNamesFilter[0x64] = { 0 };

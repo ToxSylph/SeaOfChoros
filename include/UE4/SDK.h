@@ -1788,6 +1788,13 @@ struct UScriptStruct : UStruct {
 	char UnknownData_88[0x10]; // 0x88(0x10)
 };
 
+// ScriptStruct AthenaEngine.SerialisedRpc
+// Size: 0x20 (Inherited: 0x00)
+struct FSerialisedRpc {
+	char UnknownData_0[0x18]; // 0x00(0x18)
+	class UScriptStruct* ContentsType; // 0x18(0x08)
+};
+
 // Class CoreUObject.Package
 // Size: 0x80 (Inherited: 0x28)
 struct UPackage : UObject {
@@ -2677,4 +2684,9 @@ struct ASpyglass {
 	void SpyGlassRaisedFirstPerson(bool IsRaised); // Function Athena.Spyglass.SpyGlassRaisedFirstPerson // Event|Protected|BlueprintEvent // @ game+0x179fa40
 	void SetGlintOff(); // Function Athena.Spyglass.SetGlintOff // Native|Public|BlueprintCallable // @ game+0x11489f0
 	void ResetSpyglassEffects(); // Function Athena.Spyglass.ResetSpyglassEffects // Final|Native|Public|BlueprintCallable // @ game+0x1148200
+};
+
+struct FSailsBillowStateChangeRpc {
+	char pad_00[0x10];
+	bool AreSailsBillowed; // 0x10(0x01)
 };

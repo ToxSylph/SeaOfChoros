@@ -106,6 +106,7 @@ bool end()
 		unhook((void*)oSetCursor);
 	if (oSetCursorPos)
 		unhook((void*)oSetCursorPos);
+	EngineShutdown();
 	clearDX11Objects();
 	tslog::shutdown();
 	FreeLibraryAndExitThread(g_hInstance, 0);
@@ -586,6 +587,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				if (ImGui::BeginChild("cDev", ImVec2(0.f, 0.f), true, 0))
 				{
 					ImGui::Checkbox("Print errors codes in console", &Config::cfg.dev.printErrorCodes);
+					ImGui::Checkbox("Print RPC calls in console", &Config::cfg.dev.printRPCCalls);
 					ImGui::SliderFloat("Modify Global Text Size", &Config::cfg.dev.renderTextSizeFactor, 0.1f, 3.0f, "%.2f");
 					ImGui::Checkbox("Show Debug Names", &Config::cfg.dev.debugNames);
 					ImGui::Text("Filter Keyword");

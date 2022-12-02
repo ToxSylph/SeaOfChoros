@@ -10,6 +10,14 @@
 #include "ImGui/imgui_impl_dx11.h"
 #include "ImGui/imgui_internal.h"
 
+
+#include "HookLib/Hooklib.h"
+#pragma comment(lib, "HookLib/Hooklib.lib")
+#pragma comment(lib, "HookLib/Zydis.lib")
+
+void processhk(void* Object, UFunction* Function, void* Params);
+typedef void(__stdcall* fnProcessEvent)(void* Object, UFunction* Function, void* Params);
+
 namespace engine
 {
 	static UAthenaGameViewportClient* AthenaGameViewportClient = nullptr;
@@ -19,7 +27,12 @@ namespace engine
 	static ULevel* persistentLevel = nullptr;
 	static Config::Configuration* cfg = &Config::cfg;
 	static bool bClearSunkList = false;
+	static fnProcessEvent oProcessEvent = nullptr;
 }
+
+struct FunctionIndex {
+	static inline int32_t BoxedRpcDispatcherComponent = -1;
+};
 
 void render(ImDrawList* drawList);
 bool initUE4(uintptr_t world, uintptr_t objects, uintptr_t names);
@@ -41,6 +54,9 @@ bool raytrace(UWorld* world, const struct FVector& start, const struct FVector& 
 FVector pickHoleToAim(AHullDamage* damage, const FVector& localLoc);
 bool loadDevSettings();
 void ClearSunkList();
+void hookProcessEvent();
+void unhookProcessEvent();
+void EngineShutdown();
 
 int getMapNameCode(char* name);
 std::string getIslandNameByCode(int code);
