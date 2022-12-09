@@ -28,6 +28,7 @@ namespace engine
 	static Config::Configuration* cfg = &Config::cfg;
 	static bool bClearSunkList = false;
 	static fnProcessEvent oProcessEvent = nullptr;
+	static ACharacter* aimTarget = nullptr;
 }
 
 struct FunctionIndex {

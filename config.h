@@ -156,12 +156,17 @@ public:
 				bool visibleOnly = false;
 				bool drawPred = false;
 			}cannon;
+			struct
+			{
+				bool rage = false;
+			}others;
 		}aim;
 		struct
 		{
 			bool enable = false;
 			bool shipInfo = false;
 			bool mapPins = false;
+			bool walkUnderwater = false;
 			bool showSunk = false;
 			ImVec4 sunkColor = { 1.f, 1.f, 1.f, 1.f };
 			bool playerList = false;
@@ -180,11 +185,13 @@ public:
 			float pinRenderDistanceMin = 0.f;
 
 			bool printErrorCodes = false;
+			bool interceptProcessEvent = false;
 			bool printRPCCalls = false;
 			bool debugNames = false;
 			int debugNamesTextSize = 20;
 			char debugNamesFilter[0x64] = { 0 };
 			float debugNamesRenderDistance = 0.f;
+			bool bDummy = false;
 		}dev;
 	}cfg;
 };

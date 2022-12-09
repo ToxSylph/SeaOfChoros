@@ -1245,12 +1245,119 @@ struct UWieldedItemComponent {
 	char pad[0x02F0];
 	ACharacter* CurrentlyWieldedItem; // 0x02F0
 };
-// Class Athena.AthenaCharacter
+
+
+// ScriptStruct Athena.AthenaCharacterSwimParams
+// Size: 0x9c (Inherited: 0x00)
+struct FAthenaCharacterSwimParams {
+	float EnterSwimmingDepth; // 0x00(0x04)
+	float ExitSwimmingDepth; // 0x04(0x04)
+	float FloatHeight; // 0x08(0x04)
+	float ThirdPersonMeshOffset; // 0x0c(0x04)
+	float ThirdPersonMeshAdjustTime; // 0x10(0x04)
+	float FullGravityHeight; // 0x14(0x04)
+	float SurfaceSwimDepth; // 0x18(0x04)
+	float SurfaceSwimExitDepth; // 0x1c(0x04)
+	float SubmergedBuoyancyDepth; // 0x20(0x04)
+	float ZeroDragDepth; // 0x24(0x04)
+	float MaxBuoyancyAcceleration; // 0x28(0x04)
+	float SubmergedBuoyancyAcceleration; // 0x2c(0x04)
+	float SubmergedBuoyancyTime; // 0x30(0x04)
+	float DragFactor; // 0x34(0x04)
+	float MaxDragAcceleration; // 0x38(0x04)
+	float MinPushDownRoofAngle; // 0x3c(0x04)
+	float MinPushDownRoofZ; // 0x40(0x04)
+	float MinCorrectionVelForSurfaceSwim; // 0x44(0x04)
+	float SurfaceVelBlendTime; // 0x48(0x04)
+	float UnderwaterSwimmingEntryPitch; // 0x4c(0x04)
+	float UnderwaterSwimmingEntryAccel; // 0x50(0x04)
+	float UnderwaterSwimDepth; // 0x54(0x04)
+	float UnderwaterSwimmingDragSpeed; // 0x58(0x04)
+	float UnderwaterSwimmingSpeed; // 0x5c(0x04)
+	float PitchBlendOffRate; // 0x60(0x04)
+	float MaxSwimDepth; // 0x64(0x04)
+	float MaxSwimDepthBuoyancy; // 0x68(0x04)
+	float MaxSwimDepthBuoyancyRange; // 0x6c(0x04)
+	float MaxSwimDepthDragFactor; // 0x70(0x04)
+	float CharacterCentreOffset; // 0x74(0x04)
+	char WaterDepthTraceQueryType; // 0x78(0x01)
+	char UnknownData_79[0x3]; // 0x79(0x03)
+	char SurfaceSwimSpeeds[0x0c]; // 0x7c(0x0c)
+	char UnderwaterSwimSpeeds[0x0c]; // 0x88(0x0c)
+	float SurfaceSwimmingDepthWhenEnteredWater; // 0x94(0x04)
+	char UnknownData_98[0x4]; // 0x98(0x04)
+};
+
+// Class Athena.AthenaCharacterMovementComponent
+// Size: 0x830 (Inherited: 0x590)
+struct UAthenaCharacterMovementComponent {
+	char pad_00[0x590];
+	char UnknownData_590[0x8]; // 0x590(0x08)
+	struct FAthenaCharacterSwimParams SwimParams; // 0x598(0x9c)
+	float SprintSpdAmp; // 0x634(0x04)
+	float SprintAccelAmp; // 0x638(0x04)
+	float LookAtYawRate; // 0x63c(0x04)
+	float LookAtPitchRate; // 0x640(0x04)
+	char UnknownData_644[0x4]; // 0x644(0x04)
+	float MaxSpeedRatioWhenWalkingInNonSwimWater; // 0x648(0x04)
+	float MaxAccelerationRatioWhenWalkingInNonSwimWater; // 0x64c(0x04)
+	char bCharacterCollisionSweepsEnabled : 1; // 0x650(0x01)
+	char UnknownData_650_1 : 7; // 0x650(0x01)
+	char UnknownData_651[0x3]; // 0x651(0x03)
+	float CharacterCollisionRadius; // 0x654(0x04)
+	char CharacterCollisionProfile[0x8]; // 0x658(0x08)
+	char CollisionPanicFallbackProfileName[0x8]; // 0x660(0x08)
+	float CharacterCollisionWalkingFriction; // 0x668(0x04)
+	float CharacterCollisionSwimmingFriction; // 0x66c(0x04)
+	float CharacterCollisionUnderwaterOffset; // 0x670(0x04)
+	char UnknownData_674[0x4]; // 0x674(0x04)
+	char UnderwaterMovement[0x8]; // 0x678(0x08)
+	bool bCreateDisturbance; // 0x680(0x01)
+	char UnknownData_681[0x3]; // 0x681(0x03)
+	float DisturbanceSize; // 0x684(0x04)
+	float DisturbanceVelocityScale; // 0x688(0x04)
+	bool UseAsRVOObstacleOnly; // 0x68c(0x01)
+	char UnknownData_68D[0x63]; // 0x68d(0x63)
+	float FanPushOutAngle; // 0x6f0(0x04)
+	int32_t FanPushOutNumSteps; // 0x6f4(0x04)
+	float MaxFanPushOutScalar; // 0x6f8(0x04)
+	char UnknownData_6FC[0x4]; // 0x6fc(0x04)
+	char UnderwaterVelocityToAnglePitchProjectileHitVolume[0x8]; // 0x700(0x08)
+	char UnderwaterVelocityToAngleRollProjectileHitVolume[0x8]; // 0x708(0x08)
+	char UnderwaterVelocityToZOffsetProjectileHitVolume[0x8]; // 0x710(0x08)
+	char OnLandVelocityToAnglePitchProjectileHitVolume[0x8]; // 0x718(0x08)
+	char OnLandVelocityToXOffsetProjectileHitVolume[0x8]; // 0x720(0x08)
+	char OnLandVelocityToYOffsetProjectileHitVolume[0x8]; // 0x728(0x08)
+	char OnLandVelocityToZOffsetProjectileHitVolume[0x8]; // 0x730(0x08)
+	char FallingVelocityToAnglePitchProjectileHitVolume[0x8]; // 0x738(0x08)
+	char FallingVelocityToXOffsetProjectileHitVolume[0x8]; // 0x740(0x08)
+	char FallingVelocityToZOffsetProjectileHitVolume[0x8]; // 0x748(0x08)
+	char UnknownData_750[0xb0]; // 0x750(0xb0)
+	struct FName NonUnderwaterCollisionProfileName; // 0x800(0x08)
+	struct FName UnderwaterCollisionProfileName; // 0x808(0x08)
+	char UnknownData_810[0x20]; // 0x810(0x20)
+
+	void UnforceSwimmingClientTrustThreshold(); // Function Athena.AthenaCharacterMovementComponent.UnforceSwimmingClientTrustThreshold // Final|Native|Public|BlueprintCallable // @ game+0xc93e20
+	void SetMovementMode(char NewMovementMode, char NewCustomMode); // Function Athena.AthenaCharacterMovementComponent.SetMovementMode // Native|Public|BlueprintCallable // @ game+0xc929e0
+	void SetErrorOnResolvePenetration(bool ErrorOnResolve); // Function Athena.AthenaCharacterMovementComponent.SetErrorOnResolvePenetration // Final|Native|Public|BlueprintCallable // @ game+0xc922f0
+	bool HasValidAckedMoveClientOnly(); // Function Athena.AthenaCharacterMovementComponent.HasValidAckedMoveClientOnly // Final|Native|Public|BlueprintCallable|BlueprintPure|Const // @ game+0xc8f170
+	float GetTimestampOfMostRecentPredictedMoveClientOnly(); // Function Athena.AthenaCharacterMovementComponent.GetTimestampOfMostRecentPredictedMoveClientOnly // Final|Native|Public|BlueprintCallable|BlueprintPure|Const // @ game+0xc8e960
+	float GetTimestampOfLastAckedMoveClientOnly(); // Function Athena.AthenaCharacterMovementComponent.GetTimestampOfLastAckedMoveClientOnly // Final|Native|Public|BlueprintCallable|BlueprintPure|Const // @ game+0xc8e930
+	float GetTerminalVelocity(); // Function Athena.AthenaCharacterMovementComponent.GetTerminalVelocity // Final|Native|Public|BlueprintCallable|BlueprintPure|Const // @ game+0xc8e8c0
+	char GetMovementMode(); // Function Athena.AthenaCharacterMovementComponent.GetMovementMode // Native|Public|BlueprintCallable|BlueprintPure|Const // @ game+0xc8e2d0
+	float GetMaxSprintSpeed(); // Function Athena.AthenaCharacterMovementComponent.GetMaxSprintSpeed // Native|Public|BlueprintCallable|BlueprintPure|Const // @ game+0xc8e220
+	float GetMaxMoveSpeedScalar(); // Function Athena.AthenaCharacterMovementComponent.GetMaxMoveSpeedScalar // Final|Native|Public|BlueprintCallable|BlueprintPure|Const // @ game+0xc8e1f0
+	void ForceSwimmingClientTrustThreshold(float NewSwimmingClientTrustThreshold); // Function Athena.AthenaCharacterMovementComponent.ForceSwimmingClientTrustThreshold // Final|Native|Public|BlueprintCallable // @ game+0xc8b300
+	void FindCurrentFloor(); // Function Athena.AthenaCharacterMovementComponent.FindCurrentFloor // Final|Native|Public|BlueprintCallable // @ game+0xc8b000
+};
+// Class Athena.AthenaCharacter   AAthenaCharacter -> AthenaCharacterMovementComponent*(0x718) -> SwimParams(0x568) -> EnterSwimmingDepth(0x0)
 // Size: 0xbb0 (Inherited: 0x5e0)
 struct AAthenaCharacter : ACharacter {
-	char pad[0x250];
+	char pad[0x138];
+	struct UAthenaCharacterMovementComponent* CharacterMovementComponent; // (0x718)
+	char pad2[0x110];
 	UWieldedItemComponent* WieldedItemComponent; // 0x0830
-	char pad2[0x378];
+	char pad3[0x378];
 };
 
 // Class Athena.AthenaPlayerCharacter
@@ -2464,6 +2571,18 @@ struct AProjectileWeapon {
 
 };
 
+// Class Athena.TestProjectileWeapon
+// Size: 0xb30 (Inherited: 0xa50)
+struct ATestProjectileWeapon : AProjectileWeapon {
+	void FireInstantly()
+	{
+		static auto fn = UObject::FindObject<UFunction>("Function Athena.TestProjectileWeapon.FireInstantly");
+		ProcessEvent(this, fn, nullptr);
+	}
+};
+
+
+
 struct AMapTable
 {
 	char pad[0x04E8];
@@ -2689,4 +2808,22 @@ struct ASpyglass {
 struct FSailsBillowStateChangeRpc {
 	char pad_00[0x10];
 	bool AreSailsBillowed; // 0x10(0x01)
+};
+
+class UFunctionEx : public UStruct
+{
+public:
+	int FunctionFlags;
+	uint16_t RepOffset;
+	uint8_t NumParms;
+	char pad;
+	uint16_t ParmsSize;
+	uint16_t ReturnValueOffset;
+	uint16_t RPCId;
+	uint16_t RPCResponseId;
+	UProperty* FirstPropertyToInit;
+	UFunctionEx* EventGraphFunction; //0x00A0
+	int EventGraphCallOffset;
+	char pad_0x00AC[0x4]; //0x00AC
+	void* Func; //0x00B0
 };

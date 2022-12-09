@@ -544,7 +544,8 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				ImGui::Text("More");
 				if (ImGui::BeginChild("MoreAim", ImVec2(0.f, 0.f), true, 0))
 				{
-					ImGui::Checkbox("Enable", &Config::cfg.esp.others.enable);
+					ImGui::Checkbox("RAGE", &Config::cfg.aim.others.rage);
+					ImGui::Text("Test Only, not safe.");
 				}
 				ImGui::EndChild();
 
@@ -570,6 +571,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Players List", &Config::cfg.game.playerList);
 					ImGui::Checkbox("Cook Tracker", &Config::cfg.game.cooking);
 					ImGui::Checkbox("Disable Idle Kick", &Config::cfg.game.noIdleKick);
+					ImGui::Checkbox("Walk Underwate ( F8 toggle | C key to fast dive )", &Config::cfg.game.walkUnderwater);
 					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
 					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
 					if (ImGui::Button("Clear Sunk List"))
@@ -587,6 +589,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				if (ImGui::BeginChild("cDev", ImVec2(0.f, 0.f), true, 0))
 				{
 					ImGui::Checkbox("Print errors codes in console", &Config::cfg.dev.printErrorCodes);
+					ImGui::Checkbox("Intercept Process Event", &Config::cfg.dev.interceptProcessEvent);
 					ImGui::Checkbox("Print RPC calls in console", &Config::cfg.dev.printRPCCalls);
 					ImGui::SliderFloat("Modify Global Text Size", &Config::cfg.dev.renderTextSizeFactor, 0.1f, 3.0f, "%.2f");
 					ImGui::Checkbox("Show Debug Names", &Config::cfg.dev.debugNames);

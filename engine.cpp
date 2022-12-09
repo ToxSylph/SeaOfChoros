@@ -406,6 +406,12 @@ void render(ImDrawList* drawList)
 			}
 			if (isWieldedWeapon)
 			{
+				if (GetAsyncKeyState(VK_F1) & 1)
+				{
+					cfg->aim.others.rage = !cfg->aim.others.rage;
+					if (!cfg->aim.others.rage)
+						engine::aimTarget = nullptr;
+				}
 				do {
 					if (attachObject && attachObject->isCannon()) break;
 
@@ -438,6 +444,12 @@ void render(ImDrawList* drawList)
 					{
 						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
 						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "Kegs Aimbot", 0, 0.0f, 0);
+						localsets++;
+					}
+					if (cfg->aim.others.rage)
+					{
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 325.f + (float)(localsets * 20)), ImColor(0, 0, 0, 255), "RAGE", 0, 0.0f, 0);
+						ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1655.f, 325.f + (float)(localsets * 20)), ImColor(0, 255, 0, 255), "RAGE", 0, 0.0f, 0);
 						localsets++;
 					}
 				} while (false);
@@ -621,11 +633,40 @@ void render(ImDrawList* drawList)
 			}
 		}
 
-		if (cfg->dev.printRPCCalls && engine::oProcessEvent == nullptr)
+		if (GetAsyncKeyState(VK_F8) & 1)
+		{
+			cfg->game.walkUnderwater = !cfg->game.walkUnderwater;
+		}
+
+		if (cfg->game.enable)
+		{
+			if (cfg->game.walkUnderwater)
+			{
+				if (GetAsyncKeyState(0x43)) // C Key
+				{
+					localPlayerActor->CharacterMovementComponent->SwimParams.EnterSwimmingDepth = 15000.f;
+					localPlayerActor->CharacterMovementComponent->SwimParams.ExitSwimmingDepth = 15000.f;
+				}
+				else
+				{
+					float playerZ = abs(localPlayerActor->K2_GetActorLocation().Z) + 170.f;
+
+					localPlayerActor->CharacterMovementComponent->SwimParams.EnterSwimmingDepth = playerZ;
+					localPlayerActor->CharacterMovementComponent->SwimParams.ExitSwimmingDepth = playerZ;
+				}
+			}
+			else if (!cfg->game.walkUnderwater)
+			{
+				localPlayerActor->CharacterMovementComponent->SwimParams.EnterSwimmingDepth = 120.f;
+				localPlayerActor->CharacterMovementComponent->SwimParams.ExitSwimmingDepth = 120.f;
+			}
+		}
+		
+		if (cfg->dev.interceptProcessEvent && engine::oProcessEvent == nullptr)
 		{
 			hookProcessEvent();
 		}
-		else if (!cfg->dev.printRPCCalls && engine::oProcessEvent != nullptr)
+		else if (!cfg->dev.interceptProcessEvent && engine::oProcessEvent != nullptr)
 		{
 			unhookProcessEvent();
 		}
@@ -816,7 +857,7 @@ void render(ImDrawList* drawList)
 									case 3: snprintf(buf + len, sizeof(buf) - len, "***"); break;
 									case 2: snprintf(buf + len, sizeof(buf) - len, "**"); break;
 									case 1: snprintf(buf + len, sizeof(buf) - len, "*"); break;
-									default: snprintf(buf + len, sizeof(buf) - len, "DEAD"); break;
+									default: snprintf(buf + len, sizeof(buf) - len, "Lives: %d", lives); break;
 									}
 									if (lives > 0)
 										RenderText(drawList, buf, screen, cfg->esp.ships.color, 20);
@@ -1646,6 +1687,10 @@ void render(ImDrawList* drawList)
 								{
 									break;
 								}
+								if (ship->NumShotsLeftToKill < 1)
+								{
+									break;
+								}
 								auto cannon = reinterpret_cast<ACannon*>(attachObject);
 								float gravity_scale = cannon->ProjectileGravityScale;
 								auto forward = actor->GetActorForwardVector();
@@ -1702,6 +1747,7 @@ void render(ImDrawList* drawList)
 										aimBest.delta = rotationDelta;
 										aimBest.best = sum;
 										aimBest.smoothness = cfg->aim.weapon.smooth;
+										engine::aimTarget = actor;
 									}
 
 								} while (false);
@@ -1757,6 +1803,7 @@ void render(ImDrawList* drawList)
 										aimBest.delta = rotationDelta;
 										aimBest.best = sum;
 										aimBest.smoothness = cfg->aim.weapon.smooth;
+										engine::aimTarget = actor;
 									}
 								} while (false);
 							}
@@ -1878,7 +1925,7 @@ void render(ImDrawList* drawList)
 				}
 			}
 		}
-		if (aimBest.target != nullptr)
+		if (aimBest.target != nullptr || (engine::aimTarget && cfg->aim.others.rage))
 		{
 			error_code = 43;
 
@@ -1941,7 +1988,8 @@ void render(ImDrawList* drawList)
 						LV = { 0.f,0.f,0.f };
 						TV = { 0.f,0.f,0.f };
 					}
-					const FVector RV = TV - LV;
+
+					FVector RV = TV - LV;
 					float BS;
 					if (localWeapon)
 						BS = localWeapon->WeaponParameters.AmmoParams.Velocity;
@@ -1959,10 +2007,15 @@ void render(ImDrawList* drawList)
 						const float x2 = (-b - DRoot) / (2 * a);
 						if (x1 >= 0 && x1 >= x2) aimBest.location += RV * x1;
 						else if (x2 >= 0) aimBest.location += RV * x2;
+
 						aimBest.delta = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, aimBest.location), cameraRotation);
 						auto smoothness = 1.f / aimBest.smoothness;
-						playerController->AddYawInput(aimBest.delta.Yaw * smoothness);
-						playerController->AddPitchInput(aimBest.delta.Pitch * -smoothness);
+						if (abs(aimBest.delta.Yaw) > 0.005f || abs(aimBest.delta.Pitch) > 0.005f)
+						{
+
+							playerController->AddYawInput(aimBest.delta.Yaw * smoothness);
+							playerController->AddPitchInput(aimBest.delta.Pitch * -smoothness);
+						}
 					}
 					static byte shotFixC = 0;
 					static bool shotFixing = false;
@@ -1991,31 +2044,65 @@ void render(ImDrawList* drawList)
 								break;
 							}
 
-							if (!playerController->LineOfSightTo(aimBest.target, cameraLocation, false)) break;
-							INPUT inputs[6] = {};
-							ZeroMemory(inputs, sizeof(inputs));
+							if (!playerController->LineOfSightTo(aimBest.target, cameraLocation, false) && !cfg->aim.others.rage) break;
 
-							inputs[0].type = INPUT_MOUSE;
-							inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
 
-							inputs[1].type = INPUT_MOUSE;
-							inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+							if (cfg->aim.others.rage && engine::aimTarget != nullptr && cfg->dev.interceptProcessEvent)
+							{
+								if (!playerController->LineOfSightTo(engine::aimTarget, cameraLocation, false)) break;
+								auto deltaRage = UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(cameraLocation, engine::aimTarget->K2_GetActorLocation()), cameraRotation);
 
-							inputs[2].type = INPUT_KEYBOARD;
-							inputs[2].ki.wVk = 0x58; // X Key
+								playerController->AddYawInput(deltaRage.Yaw);
+								playerController->AddPitchInput(deltaRage.Pitch);
 
-							inputs[3].type = INPUT_KEYBOARD;
-							inputs[3].ki.wVk = 0x58; // X Key
-							inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+								reinterpret_cast<ATestProjectileWeapon*>(localWeapon)->FireInstantly();
 
-							inputs[4].type = INPUT_KEYBOARD;
-							inputs[4].ki.wVk = 0x58; // X Key
+								INPUT inputs[4] = {};
+								ZeroMemory(inputs, sizeof(inputs));
 
-							inputs[5].type = INPUT_KEYBOARD;
-							inputs[5].ki.wVk = 0x58; // X Key
-							inputs[5].ki.dwFlags = KEYEVENTF_KEYUP;
+								inputs[0].type = INPUT_KEYBOARD;
+								inputs[0].ki.wVk = 0x58; // X Key
 
-							SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+								inputs[1].type = INPUT_KEYBOARD;
+								inputs[1].ki.wVk = 0x58; // X Key
+								inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+
+								inputs[2].type = INPUT_KEYBOARD;
+								inputs[2].ki.wVk = 0x58; // X Key
+
+								inputs[3].type = INPUT_KEYBOARD;
+								inputs[3].ki.wVk = 0x58; // X Key
+								inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+
+								SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+							}
+							else
+							{
+								INPUT inputs[6] = {};
+								ZeroMemory(inputs, sizeof(inputs));
+								inputs[0].type = INPUT_MOUSE;
+								inputs[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+
+								inputs[1].type = INPUT_MOUSE;
+								inputs[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
+
+								inputs[2].type = INPUT_KEYBOARD;
+								inputs[2].ki.wVk = 0x58; // X Key
+
+								inputs[3].type = INPUT_KEYBOARD;
+								inputs[3].ki.wVk = 0x58; // X Key
+								inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+
+								inputs[4].type = INPUT_KEYBOARD;
+								inputs[4].ki.wVk = 0x58; // X Key
+
+								inputs[5].type = INPUT_KEYBOARD;
+								inputs[5].ki.wVk = 0x58; // X Key
+								inputs[5].ki.dwFlags = KEYEVENTF_KEYUP;
+
+								SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+							}
+
 							shotFixC = 0;
 						} while (false);
 					}
@@ -2347,11 +2434,19 @@ void processhk(void* Object, UFunction* Function, void* Params)
 	if (Function->InternalIndex == FunctionIndex::BoxedRpcDispatcherComponent)
 	{
 		auto result = (FSerialisedRpc*)Params;
-		char buf[0x64];
-		ZeroMemory(buf, sizeof(buf));
-		int len = sprintf_s(buf, sizeof(buf), "Name: %s", result->ContentsType->GetFullName().c_str());
-		if (len > 6)
-			tslog::debug(buf);
+		if (cfg->dev.printRPCCalls)
+		{
+			char buf[0x64];
+			ZeroMemory(buf, sizeof(buf));
+			int len = sprintf_s(buf, sizeof(buf), "Name: %s", result->ContentsType->GetFullName().c_str());
+			if (len > 6)
+				tslog::debug(buf);
+		}
+
+		if (result->ContentsType->GetFullName().find("ScriptStruct Athena.PrepareInstantFireRpc") != std::string::npos) {
+			tslog::debug("Intercepting PrepareInstantFireRpc");
+			return;
+		}
 	} // TODO: learn how to faqin deserialize UScriptStruct
 	return oProcessEvent(Object, Function, Params);
 }
