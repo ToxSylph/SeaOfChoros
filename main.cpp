@@ -270,6 +270,8 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderFloat("CH Thickness", &Config::cfg.client.crosshairThickness, 1.f, 50.f, "%.0f");
 					ImGui::ColorEdit4("CH Color", &Config::cfg.client.crosshairColor.x, 0);
 					ImGui::Combo("Crosshair Type", reinterpret_cast<int*>(&Config::cfg.client.crosshairType), crosshair, IM_ARRAYSIZE(crosshair));
+					ImGui::Checkbox("Enable Custom Time of Day (Experimental | Not safe)", &Config::cfg.client.bCustomTOD);
+					ImGui::SliderFloat("Time of Day", &Config::cfg.client.customTOD, 1.f, 24.f, "%.0f:00");
 				}
 
 				ImGui::Text("");
@@ -597,6 +599,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::InputText("Keyword", Config::cfg.dev.debugNamesFilter, IM_ARRAYSIZE(Config::cfg.dev.debugNamesFilter));
 					ImGui::SliderInt("Debug Names Text Size", &Config::cfg.dev.debugNamesTextSize, 1, 50);
 					ImGui::SliderFloat("Debug Names Render Distance", &Config::cfg.dev.debugNamesRenderDistance, 1.f, 1000.f, "%.0f");
+					ImGui::Checkbox("Dummy Boolean (Debugging purposes)", &Config::cfg.dev.bDummy);
 				}
 				ImGui::EndChild();
 				ImGui::EndTabItem();

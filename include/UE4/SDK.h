@@ -904,6 +904,11 @@ struct ACharacter : APawn {
 		return IsA(obj);
 	}
 
+	inline bool isLightningController() {
+		static auto obj = UObject::FindClass("Class Athena.LightingController");
+		return IsA(obj);
+	}
+
 	AHullDamage* GetHullDamage() {
 		static auto fn = UObject::FindObject<UFunction>("Function Athena.Ship.GetHullDamage");
 		AHullDamage* params = nullptr;
@@ -2826,4 +2831,13 @@ public:
 	int EventGraphCallOffset;
 	char pad_0x00AC[0x4]; //0x00AC
 	void* Func; //0x00B0
+};
+
+struct ALightingController {
+	char pad_0[0x728];
+	float FixedTimeOfDay; // 0x728(0x04)
+	int32_t FixedDay; // 0x72c(0x04)
+	bool IsFixedTimeOfDay; // 0x730(0x01)
+	char UnknownData_731[0x7]; // 0x731(0x07)
+
 };

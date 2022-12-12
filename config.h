@@ -25,6 +25,8 @@ public:
 			float crosshairThickness = 1.f;
 			ImVec4 crosshairColor = { 1.f, 1.f, 1.f, 1.f };
 			ECrosshairs crosshairType = ECrosshairs::ENone;
+			bool bCustomTOD = false;
+			float customTOD = 0.f;
 		}client;
 		struct
 		{

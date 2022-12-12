@@ -661,7 +661,7 @@ void render(ImDrawList* drawList)
 				localPlayerActor->CharacterMovementComponent->SwimParams.ExitSwimmingDepth = 120.f;
 			}
 		}
-		
+
 		if (cfg->dev.interceptProcessEvent && engine::oProcessEvent == nullptr)
 		{
 			hookProcessEvent();
@@ -707,6 +707,25 @@ void render(ImDrawList* drawList)
 						}
 					}
 				}
+				if (cfg->client.enable)
+				{
+					if (actor->isLightningController())
+					{
+						auto lCon = reinterpret_cast<ALightingController*>(actor);
+
+						if (cfg->client.bCustomTOD)
+						{
+							lCon->IsFixedTimeOfDay = true;
+							lCon->FixedTimeOfDay = cfg->client.customTOD;
+						}
+						else if(lCon->IsFixedTimeOfDay)
+						{
+							lCon->FixedTimeOfDay = 0.f;
+							lCon->IsFixedTimeOfDay = false;
+						}
+					}
+				}
+
 				if (cfg->esp.enable)
 				{
 					do
@@ -2537,6 +2556,7 @@ bool loadDevSettings()
 	cfg->game.shipInfo = true;
 	cfg->game.mapPins = true;
 	cfg->game.playerList = true;
+	cfg->game.noIdleKick = true;
 
 	cfg->dev.printErrorCodes = true;
 
