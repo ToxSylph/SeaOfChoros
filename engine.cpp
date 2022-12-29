@@ -718,7 +718,7 @@ void render(ImDrawList* drawList)
 							lCon->IsFixedTimeOfDay = true;
 							lCon->FixedTimeOfDay = cfg->client.customTOD;
 						}
-						else if(lCon->IsFixedTimeOfDay)
+						else if (lCon->IsFixedTimeOfDay)
 						{
 							lCon->FixedTimeOfDay = 0.f;
 							lCon->IsFixedTimeOfDay = false;
@@ -1073,7 +1073,7 @@ void render(ImDrawList* drawList)
 								}
 							} while (false);
 						}
-						if (cfg->esp.islands.barrels && actor->isBarrel())
+						if (cfg->esp.islands.barrels && actor->isBarrel()) // TODO: galleon barrels crash on peek option (brig prob too)
 						{
 							do
 							{
@@ -2043,25 +2043,29 @@ void render(ImDrawList* drawList)
 					{
 						error_code = 46;
 						do {
-							if (shotFixC != 1 && !shotFixing)
+							if (!cfg->aim.others.rage)
 							{
-								shotFixC++;
-								break;
+								if (shotFixC != 1 && !shotFixing)
+								{
+									shotFixC++;
+									break;
+								}
+								if (shotDesiredTime == 0)
+								{
+									shotDesiredTime = milliseconds_now() + 210;
+									shotFixing = true;
+								}
+								if (milliseconds_now() >= shotDesiredTime)
+								{
+									shotDesiredTime = 0;
+									shotFixing = false;
+								}
+								else
+								{
+									break;
+								}
 							}
-							if (shotDesiredTime == 0)
-							{
-								shotDesiredTime = milliseconds_now() + 210;
-								shotFixing = true;
-							}
-							if (milliseconds_now() >= shotDesiredTime)
-							{
-								shotDesiredTime = 0;
-								shotFixing = false;
-							}
-							else
-							{
-								break;
-							}
+
 
 							if (!playerController->LineOfSightTo(aimBest.target, cameraLocation, false) && !cfg->aim.others.rage) break;
 
@@ -2566,6 +2570,38 @@ bool loadDevSettings()
 void ClearSunkList()
 {
 	engine::bClearSunkList = true;
+}
+
+bool loadPirateGenerator()
+{
+	bool found = false;
+	TArray<ULevel*> levels = AthenaGameViewportClient->World->Levels;
+	for (UINT32 i = 0; i < levels.Count; i++)
+	{
+		if (!levels[i])
+			continue;
+		TArray<ACharacter*> actors = levels[i]->AActors;
+		for (UINT32 j = 0; j < actors.Count; j++)
+		{
+			ACharacter* actor = actors[j];
+			if (!actor)
+				continue;
+			if (actor->compareName("BP_PirateGenerator_LineUpUI_C"))
+			{
+				found = true;
+				engine::carousel = reinterpret_cast<PirateGeneratorLineUpUI*>(actor);
+				break;
+			}
+		}
+		if (found)
+			break;
+	}
+	return found;
+}
+
+uintptr_t getPirateGenerator()
+{
+	return (uintptr_t)engine::carousel;
 }
 
 int getMapNameCode(char* name)

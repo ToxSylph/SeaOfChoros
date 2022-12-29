@@ -29,6 +29,8 @@ namespace engine
 	static bool bClearSunkList = false;
 	static fnProcessEvent oProcessEvent = nullptr;
 	static ACharacter* aimTarget = nullptr;
+	static bool bInPirateGenerator = false;
+	static PirateGeneratorLineUpUI* carousel = nullptr;
 }
 
 struct FunctionIndex {
@@ -58,6 +60,8 @@ void ClearSunkList();
 void hookProcessEvent();
 void unhookProcessEvent();
 void EngineShutdown();
+bool loadPirateGenerator();
+uintptr_t getPirateGenerator();
 
 int getMapNameCode(char* name);
 std::string getIslandNameByCode(int code);

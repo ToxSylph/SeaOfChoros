@@ -24,6 +24,17 @@ static ID3D11Device* device = nullptr;
 static ID3D11DeviceContext* context = nullptr;
 static ID3D11RenderTargetView* rtv = nullptr;
 
+static int tPirateSeedN = -1;
+static char tPirateSeed[0x64] = { 0 };
+static int tPirateGender = -1;
+static int tPirateEthnicity = -1;
+static float tPirateAge = -1.f;
+static float tPirateBodyType = -1.f;
+static float tPirateBodyTypeModifier = -1.f;
+static float tPirateDirtiness = -1.f;
+static float tPirateWonkiness = -1.f;
+
+
 bool init();
 bool end();
 void run();
@@ -41,7 +52,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
 typedef HRESULT(*DX11Present)(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags);
 DX11Present oDX11Present = nullptr;
 
-HRESULT resizeBufferHook(IDXGISwapChain * swapChain, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
+HRESULT resizeBufferHook(IDXGISwapChain* swapChain, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
 typedef HRESULT(*DX11ResizeBuffer)(IDXGISwapChain* swapChain, UINT bufferCount, UINT width, UINT height, DXGI_FORMAT newFormat, UINT swapChainFlags);
 DX11ResizeBuffer oDX11ResizeBuffer = nullptr;
 
@@ -49,9 +60,6 @@ DX11ResizeBuffer oDX11ResizeBuffer = nullptr;
 WNDPROC oWindowProc = nullptr;
 
 LRESULT CALLBACK windowProcHookEx(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-
-
 
 // WINDOWS DEBUG HELPERS
 

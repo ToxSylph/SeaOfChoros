@@ -600,21 +600,101 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderInt("Debug Names Text Size", &Config::cfg.dev.debugNamesTextSize, 1, 50);
 					ImGui::SliderFloat("Debug Names Render Distance", &Config::cfg.dev.debugNamesRenderDistance, 1.f, 1000.f, "%.0f");
 					ImGui::Checkbox("Dummy Boolean (Debugging purposes)", &Config::cfg.dev.bDummy);
+					if (ImGui::Button("Open Pirate Generator"))
+					{
+						if (loadPirateGenerator())
+						{
+							engine::bInPirateGenerator = true;
+							g_ShowMenu = false;
+						}
+						else
+						{
+							ImGui::OpenPopup("##PirateGeneratorLoaded");
+						}
+					}
+					if (ImGui::BeginPopupModal("##PirateGeneratorLoaded", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar))
+					{
+						ImGui::Text("\nSomething went wrong.\nThis must be used in the character creator.\n\n");
+						ImGui::Separator();
+						if (ImGui::Button("OK", { 170.f , 0.f })) { ImGui::CloseCurrentPopup(); }
+						ImGui::EndPopup();
+					}
 				}
 				ImGui::EndChild();
 				ImGui::EndTabItem();
 			}
-
 			ImGui::EndTabBar();
 		}
 
 		ImGui::End();
 	}
 
+	if (engine::bInPirateGenerator)
+	{
+		PirateGeneratorLineUpUI* p = (PirateGeneratorLineUpUI*)getPirateGenerator();
+		auto pirateDescs = p->CarouselPirateDescs;
+		ImGui::SetNextWindowPos(ImVec2(10, 25), ImGuiCond_Once);
+		ImGui::SetNextWindowSize(ImVec2(800, 400), ImGuiCond_Once);
+		ImGui::Begin("Pirate Customizer", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+		ImGui::Text("Open Main Menu (Insert) to be able to interact with this window");
+		if (ImGui::Button("Close"))
+		{
+			engine::bInPirateGenerator = false;
+		}
+
+		ImGui::Separator();
+		ImGui::Text("Template Pirate Seed: %d", tPirateSeedN);
+		ImGui::SameLine();
+		if (ImGui::Button("Reset"))
+		{
+			ZeroMemory(tPirateSeed, sizeof(tPirateSeed));
+			tPirateSeedN = 0;
+		}
+		ImGui::InputText("Template Pirate Seed", tPirateSeed, IM_ARRAYSIZE(tPirateSeed));
+		ImGui::SliderInt("Template Pirate Gender", &tPirateGender, -1, 4);
+		ImGui::SliderFloat("Template Pirate Age", &tPirateAge, -1.0f, 1.0f, "%.1f");
+		ImGui::SliderInt("Template Pirate Ethnicity", &tPirateEthnicity, -1, 4);
+		ImGui::SliderFloat("Template Pirate BodyType", &tPirateBodyType, -1.0f, 1.0f, "%.1f");
+		ImGui::SliderFloat("Template Pirate BodyType Modifier", &tPirateBodyTypeModifier, -1.0f, 1.0f, "%.1f");
+		ImGui::SliderFloat("Template Pirate Dirtiness", &tPirateDirtiness, -1.0f, 1.0f, "%.2f");
+		ImGui::SliderFloat("Template Pirate Wonkiness", &tPirateWonkiness, -1.0f, 1.0f, "%.2f");
+
+		for (UINT8 i = 0; i < pirateDescs.Count; i++)
+		{
+			char pBuf[0x64];
+			int filterSize = sprintf_s(pBuf, sizeof(pBuf), tPirateSeed);
+			if (filterSize != 0)
+			{
+				try
+				{
+					tPirateSeedN = std::stoi(std::string(pBuf));
+				}
+				catch (...)
+				{
+					tPirateSeedN = 0;
+					tslog::info("Seed must be a valid int32 number.");
+				}
+			}
+			else
+			{
+				tPirateSeedN = 0;
+			}
+			if (tPirateSeedN != 0) pirateDescs[i].Seed = tPirateSeedN;
+			if (tPirateGender > 0) pirateDescs[i].Gender = tPirateGender;
+			if (tPirateAge >= 0.0f) pirateDescs[i].Age = tPirateAge;
+			if (tPirateEthnicity > 0) pirateDescs[i].Ethnicity = tPirateEthnicity;
+
+			if (tPirateBodyType > 0.0f) pirateDescs[i].BodyShape.NormalizedAngle = tPirateBodyType;
+			if (tPirateBodyTypeModifier > 0.0f) pirateDescs[i].BodyShape.RadialDistance = tPirateBodyTypeModifier;
+			if (tPirateDirtiness > 0.0f) pirateDescs[i].Dirtiness = tPirateDirtiness;
+			if (tPirateWonkiness > 0.0f) pirateDescs[i].Wonkiness = tPirateWonkiness;
+		}
+		ImGui::End();
+	}
+
 	ImGui::Render();
 	context->OMSetRenderTargets(1, &rtv, nullptr);
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
 	return oDX11Present(swapChain, syncInterval, flags);
 }
 
