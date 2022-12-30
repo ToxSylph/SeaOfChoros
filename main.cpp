@@ -538,6 +538,11 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Aim To Hull", &Config::cfg.aim.cannon.lowAim);
 					ImGui::Checkbox("Player2Deck", &Config::cfg.aim.cannon.deckshots);
 					ImGui::Checkbox("Visible Only", &Config::cfg.aim.cannon.visibleOnly);
+					ImGui::Checkbox("Use Improved Version | RECOMMENDED", &Config::cfg.aim.cannon.improvedVersion);
+					if (Config::cfg.aim.cannon.improvedVersion)
+					{
+						ImGui::Text("This option works when aiming to ships.");
+					}
 				}
 				ImGui::EndChild();
 
@@ -600,6 +605,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderInt("Debug Names Text Size", &Config::cfg.dev.debugNamesTextSize, 1, 50);
 					ImGui::SliderFloat("Debug Names Render Distance", &Config::cfg.dev.debugNamesRenderDistance, 1.f, 1000.f, "%.0f");
 					ImGui::Checkbox("Dummy Boolean (Debugging purposes)", &Config::cfg.dev.bDummy);
+					ImGui::Separator();
 					if (ImGui::Button("Open Pirate Generator"))
 					{
 						if (loadPirateGenerator())
@@ -651,14 +657,45 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 			tPirateSeedN = 0;
 		}
 		ImGui::InputText("Template Pirate Seed", tPirateSeed, IM_ARRAYSIZE(tPirateSeed));
-		ImGui::SliderInt("Template Pirate Gender", &tPirateGender, -1, 4);
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If != 0, it will affect the character's face. It may look diferent in-game.");
+		}
+		ImGui::SliderInt("Template Pirate Gender", &tPirateGender, -1, 2);
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If < 1 it gets ignored | 1 = Male | 2 = Female | It is Not recommended to use this option!");
+		}
 		ImGui::SliderFloat("Template Pirate Age", &tPirateAge, -1.0f, 1.0f, "%.1f");
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If < 0 it gets ignored | From 0.0 to 1.0. Controls the character age");
+		}
 		ImGui::SliderInt("Template Pirate Ethnicity", &tPirateEthnicity, -1, 4);
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If < 1 it gets ignored | 1 = Asian | 2 = Black | 3 = White | 4 = Don't use it");
+		}
 		ImGui::SliderFloat("Template Pirate BodyType", &tPirateBodyType, -1.0f, 1.0f, "%.1f");
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If < 0 it gets ignored | Every 0.1 value change the body of your character. Play with it");
+		}
 		ImGui::SliderFloat("Template Pirate BodyType Modifier", &tPirateBodyTypeModifier, -1.0f, 1.0f, "%.1f");
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If < 0 it gets ignored | From 0.0 to 1.0. It's used to tune the body type. 1.0 is a good value to start with");
+		}
 		ImGui::SliderFloat("Template Pirate Dirtiness", &tPirateDirtiness, -1.0f, 1.0f, "%.2f");
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If < 0 it gets ignored");
+		}
 		ImGui::SliderFloat("Template Pirate Wonkiness", &tPirateWonkiness, -1.0f, 1.0f, "%.2f");
-
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+		{
+			ImGui::SetTooltip("If < 0 it gets ignored");
+		}
 		for (UINT8 i = 0; i < pirateDescs.Count; i++)
 		{
 			char pBuf[0x64];
@@ -684,10 +721,10 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 			if (tPirateAge >= 0.0f) pirateDescs[i].Age = tPirateAge;
 			if (tPirateEthnicity > 0) pirateDescs[i].Ethnicity = tPirateEthnicity;
 
-			if (tPirateBodyType > 0.0f) pirateDescs[i].BodyShape.NormalizedAngle = tPirateBodyType;
-			if (tPirateBodyTypeModifier > 0.0f) pirateDescs[i].BodyShape.RadialDistance = tPirateBodyTypeModifier;
-			if (tPirateDirtiness > 0.0f) pirateDescs[i].Dirtiness = tPirateDirtiness;
-			if (tPirateWonkiness > 0.0f) pirateDescs[i].Wonkiness = tPirateWonkiness;
+			if (tPirateBodyType >= 0.0f) pirateDescs[i].BodyShape.NormalizedAngle = tPirateBodyType;
+			if (tPirateBodyTypeModifier >= 0.0f) pirateDescs[i].BodyShape.RadialDistance = tPirateBodyTypeModifier;
+			if (tPirateDirtiness >= 0.0f) pirateDescs[i].Dirtiness = tPirateDirtiness;
+			if (tPirateWonkiness >= 0.0f) pirateDescs[i].Wonkiness = tPirateWonkiness;
 		}
 		ImGui::End();
 	}

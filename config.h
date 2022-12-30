@@ -157,6 +157,7 @@ public:
 				bool lowAim = false;
 				bool visibleOnly = false;
 				bool drawPred = false;
+				bool improvedVersion = false;
 			}cannon;
 			struct
 			{
