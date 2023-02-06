@@ -270,7 +270,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::SliderFloat("CH Thickness", &Config::cfg.client.crosshairThickness, 1.f, 50.f, "%.0f");
 					ImGui::ColorEdit4("CH Color", &Config::cfg.client.crosshairColor.x, 0);
 					ImGui::Combo("Crosshair Type", reinterpret_cast<int*>(&Config::cfg.client.crosshairType), crosshair, IM_ARRAYSIZE(crosshair));
-					ImGui::Checkbox("Enable Custom Time of Day (Experimental | Not safe)", &Config::cfg.client.bCustomTOD);
+					ImGui::Checkbox("Enable Custom Time of Day (Experimental)", &Config::cfg.client.bCustomTOD);
 					ImGui::SliderFloat("Time of Day", &Config::cfg.client.customTOD, 1.f, 24.f, "%.0f:00");
 				}
 
@@ -538,7 +538,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Aim To Hull", &Config::cfg.aim.cannon.lowAim);
 					ImGui::Checkbox("Player2Deck", &Config::cfg.aim.cannon.deckshots);
 					ImGui::Checkbox("Visible Only", &Config::cfg.aim.cannon.visibleOnly);
-					ImGui::Checkbox("Use Improved Version | RECOMMENDED", &Config::cfg.aim.cannon.improvedVersion);
+					ImGui::Checkbox("Use Improved Version | TEST", &Config::cfg.aim.cannon.improvedVersion);
 					if (Config::cfg.aim.cannon.improvedVersion)
 					{
 						ImGui::Text("This option works when aiming to ships.");
@@ -552,7 +552,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				if (ImGui::BeginChild("MoreAim", ImVec2(0.f, 0.f), true, 0))
 				{
 					ImGui::Checkbox("RAGE", &Config::cfg.aim.others.rage);
-					ImGui::Text("Test Only, not safe.");
+					ImGui::Text("Dev Only, Don't use it. Doesn't Work");
 				}
 				ImGui::EndChild();
 
@@ -578,7 +578,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Players List", &Config::cfg.game.playerList);
 					ImGui::Checkbox("Cook Tracker", &Config::cfg.game.cooking);
 					ImGui::Checkbox("Disable Idle Kick", &Config::cfg.game.noIdleKick);
-					ImGui::Checkbox("Walk Underwate ( F8 toggle | C key to fast dive )", &Config::cfg.game.walkUnderwater);
+					ImGui::Checkbox("Walk Underwate ( F8 toggle | C key to fast dive ) (Experimental)", &Config::cfg.game.walkUnderwater);
 					ImGui::Checkbox("Show Sunk Loc", &Config::cfg.game.showSunk);
 					ImGui::ColorEdit4("Sunk Color", &Config::cfg.game.sunkColor.x, 0);
 					if (ImGui::Button("Clear Sunk List"))

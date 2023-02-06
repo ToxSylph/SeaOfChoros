@@ -868,8 +868,7 @@ void render(ImDrawList* drawList)
 								FVector2D screen;
 								if (playerController->ProjectWorldLocationToScreen(location, screen))
 								{
-									auto namedPawn = reinterpret_cast<ANamedPawn*>(actor);
-									auto const playerState = namedPawn->PlayerState;
+									auto const playerState = actor->PlayerState;
 									if (!playerState) break;
 									const auto playerName = playerState->PlayerName;
 									if (!playerName.Data) break;
@@ -1025,9 +1024,8 @@ void render(ImDrawList* drawList)
 										if (actor->isFarShip() || actor->compareName("AISmall") || actor->compareName("AILarge") || actor->isGhostShip()) break;
 
 										AActor* ship = reinterpret_cast<AActor*>(actor);
-										auto shiprepm = reinterpret_cast<AShipReplicatedM*>(actor);
-										auto angular_velocity = shiprepm->ReplicatedMovement.AngularVelocity;
-										auto tangential_velocity = shiprepm->ReplicatedMovement.LinearVelocity;
+										auto angular_velocity = actor->ReplicatedMovement.AngularVelocity;
+										auto tangential_velocity = actor->ReplicatedMovement.LinearVelocity;
 										tangential_velocity.Z = 0;
 										auto speed = FVector(tangential_velocity.X, tangential_velocity.Y, 0).Size();
 
@@ -1642,10 +1640,7 @@ void render(ImDrawList* drawList)
 								FRotator low, high;
 								if (cfg->aim.cannon.improvedVersion)
 								{
-									//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-
-									auto shiprepm = reinterpret_cast<AShipReplicatedM*>(actor);
-									auto angularVelocity = shiprepm->ReplicatedMovement.AngularVelocity;
+									auto angularVelocity = actor->ReplicatedMovement.AngularVelocity;
 									int i_solutions = AimAtShip(location, actor->GetVelocity(), angularVelocity, cameraLocation, attachObject->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, low, high);
 									if (i_solutions < 1)
 										break;
@@ -1790,10 +1785,7 @@ void render(ImDrawList* drawList)
 
 								if (cfg->aim.cannon.improvedVersion)
 								{
-									//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-									
-									auto shiprepm = reinterpret_cast<AShipReplicatedM*>(actor);
-									auto angularVelocity = shiprepm->ReplicatedMovement.AngularVelocity;
+									auto angularVelocity = actor->ReplicatedMovement.AngularVelocity;
 									int i_solutions = AimAtShip(location, actor->GetVelocity(), angularVelocity, cameraLocation, attachObject->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, low, high);
 									if (i_solutions < 1)
 										break;
@@ -1852,10 +1844,7 @@ void render(ImDrawList* drawList)
 								FRotator low, high;
 								if (cfg->aim.cannon.improvedVersion)
 								{
-									//int i_solutions = AimAtMovingTarget(location, actor->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, cameraLocation, attachObject->GetVelocity(), low, high);
-
-									auto shiprepm = reinterpret_cast<AShipReplicatedM*>(actor);
-									auto angularVelocity = shiprepm->ReplicatedMovement.AngularVelocity;
+									auto angularVelocity = actor->ReplicatedMovement.AngularVelocity;
 									int i_solutions = AimAtShip(location, forward, angularVelocity, cameraLocation, attachObject->GetVelocity(), cannon->ProjectileSpeed, gravity_scale, low, high);
 									if (i_solutions < 1)
 										break;
