@@ -1201,41 +1201,49 @@ void render(ImDrawList* drawList)
 									if (barrel->StorageContainer)
 									{
 										auto cNodes = barrel->StorageContainer->ContainerNodes.ContainerNodes;
-										for (unsigned int k = 0; k < cNodes.Count; k++)
-										{
-											FStorageContainerNode node = cNodes[k];
 
-											if (node.ItemDesc)
+										try {
+											for (unsigned int k = 0; k < cNodes.Count; k++)
 											{
-												UItemDescEx* itemDesc = node.ItemDesc->CreateDefaultObject<UItemDescEx>();
+												FStorageContainerNode node = cNodes[k];
 
-												if (itemDesc)
+												if (node.ItemDesc)
 												{
-													char buf2[0x50];
-													ZeroMemory(buf2, sizeof(buf2));
+													UItemDescEx* itemDesc = node.ItemDesc->CreateDefaultObject<UItemDescEx>();
 
-
-													//FString itemName = itemDesc->Description.TextData->Text;
-													std::string itemName2 = getShortName(itemDesc->GetName());
-
-
-													int len = sprintf_s(buf2, sizeof(buf2), itemName2.c_str());
-													sprintf_s(buf2 + len, sizeof(buf2) - len, " [%d]", node.NumItems);
-
-
-													screen.Y += 20;
-
-													if (cfg->esp.islands.barrelstoggle)
+													if (itemDesc)
 													{
-														if (GetAsyncKeyState(0x52)) // R Key 
+														char buf2[0x50];
+														ZeroMemory(buf2, sizeof(buf2));
+
+
+														//FString itemName = itemDesc->Description.TextData->Text;
+														std::string itemName2 = getShortName(itemDesc->GetName());
+
+
+														int len = sprintf_s(buf2, sizeof(buf2), itemName2.c_str());
+														sprintf_s(buf2 + len, sizeof(buf2) - len, " [%d]", node.NumItems);
+
+
+														screen.Y += 20;
+
+														if (cfg->esp.islands.barrelstoggle)
+														{
+															if (GetAsyncKeyState(0x52)) // R Key 
+																RenderText(drawList, buf2, screen, cfg->esp.islands.barrelsColor, 16);
+														}
+														else
+														{
 															RenderText(drawList, buf2, screen, cfg->esp.islands.barrelsColor, 16);
-													}
-													else
-													{
-														RenderText(drawList, buf2, screen, cfg->esp.islands.barrelsColor, 16);
+														}
 													}
 												}
 											}
+										}
+										catch (...)
+										{
+											screen.Y += 20;
+											RenderText(drawList, "Invalid", screen, cfg->esp.islands.barrelsColor, 16);
 										}
 									}
 								}
