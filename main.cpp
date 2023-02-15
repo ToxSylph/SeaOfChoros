@@ -538,10 +538,15 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Aim To Hull", &Config::cfg.aim.cannon.lowAim);
 					ImGui::Checkbox("Player2Deck", &Config::cfg.aim.cannon.deckshots);
 					ImGui::Checkbox("Visible Only", &Config::cfg.aim.cannon.visibleOnly);
+					ImGui::Checkbox("Auto Detect Projectile Type", &Config::cfg.aim.cannon.autoDetect);
+					if (Config::cfg.aim.cannon.autoDetect)
+					{
+						ImGui::Text("        >> The game must be in English/Spanish.");
+					}
 					ImGui::Checkbox("Use Improved Version | TEST", &Config::cfg.aim.cannon.improvedVersion);
 					if (Config::cfg.aim.cannon.improvedVersion)
 					{
-						ImGui::Text("This option works when aiming to ships.");
+						ImGui::Text("        >> This option works when aiming to ships.");
 					}
 				}
 				ImGui::EndChild();

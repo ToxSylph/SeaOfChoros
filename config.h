@@ -156,6 +156,7 @@ public:
 				bool ghostShips = false;
 				bool lowAim = false;
 				bool visibleOnly = false;
+				bool autoDetect = false;
 				bool drawPred = false;
 				bool improvedVersion = false;
 			}cannon;

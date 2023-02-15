@@ -386,19 +386,23 @@ void render(ImDrawList* drawList)
 				if (loaded_item->LoadedItemInfo)
 				{
 					std::wstring loaded_name = loaded_item->LoadedItemInfo->Desc->Title->wide();
-					if (loaded_name.find(L"Disparo") != std::wstring::npos || loaded_name.find(L"Chain") != std::wstring::npos)
-						cfg->aim.cannon.chains = true;
-					else if (loaded_name.find(L"Jugador") != std::wstring::npos || loaded_name.find(L"Player") != std::wstring::npos)
-						cfg->aim.cannon.deckshots = true;
-					else
-					{
-						cfg->aim.cannon.chains = false;
-						cfg->aim.cannon.deckshots = false;
-					}
 					char bufff[0x64];
 					ZeroMemory(bufff, sizeof(bufff));
 					sprintf(bufff, "%ws", loaded_name.c_str());
 					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 225.f), ImColor(255, 255, 255, 255), bufff, 0, 0.0f, 0);
+
+					if (cfg->aim.cannon.autoDetect)
+					{
+						if (loaded_name.find(L"Disparo") != std::wstring::npos || loaded_name.find(L"Chain") != std::wstring::npos)
+							cfg->aim.cannon.chains = true;
+						else if (loaded_name.find(L"Jugador") != std::wstring::npos || loaded_name.find(L"Player") != std::wstring::npos)
+							cfg->aim.cannon.deckshots = true;
+						else
+						{
+							cfg->aim.cannon.chains = false;
+							cfg->aim.cannon.deckshots = false;
+						}
+					}
 				}
 
 				error_code = 801;
