@@ -529,20 +529,20 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 					ImGui::Checkbox("Enable", &Config::cfg.aim.cannon.enable);
 					ImGui::SliderFloat("Pitch", &Config::cfg.aim.cannon.fPitch, 1.f, 100.f, "%.0f");
 					ImGui::SliderFloat("Yaw", &Config::cfg.aim.cannon.fYaw, 1.f, 100.f, "%.0f");
-					ImGui::Checkbox("Draw Trajectory", &Config::cfg.aim.cannon.drawPred);
+					//ImGui::Checkbox("Draw Trajectory", &Config::cfg.aim.cannon.drawPred);
 					ImGui::Checkbox("Instant Shot", &Config::cfg.aim.cannon.instant);
-					ImGui::Checkbox("Chain Shots", &Config::cfg.aim.cannon.chains);
-					ImGui::Checkbox("Players", &Config::cfg.aim.cannon.players);
+					ImGui::Checkbox("Chain Shots | F1", &Config::cfg.aim.cannon.chains);
+					ImGui::Checkbox("Players | F2", &Config::cfg.aim.cannon.players);
 					ImGui::Checkbox("Skeletons", &Config::cfg.aim.cannon.skeletons);
 					ImGui::Checkbox("Ghost Ships", &Config::cfg.aim.cannon.ghostShips);
-					ImGui::Checkbox("Aim To Hull", &Config::cfg.aim.cannon.lowAim);
+					ImGui::Checkbox("Aim To Closest Undamaged Zone | F3", &Config::cfg.aim.cannon.lowAim);
 					ImGui::Checkbox("Player2Deck", &Config::cfg.aim.cannon.deckshots);
 					ImGui::Checkbox("Visible Only", &Config::cfg.aim.cannon.visibleOnly);
-					ImGui::Checkbox("Auto Detect Projectile Type", &Config::cfg.aim.cannon.autoDetect);
+					/*ImGui::Checkbox("Auto Detect Projectile Type", &Config::cfg.aim.cannon.autoDetect);
 					if (Config::cfg.aim.cannon.autoDetect)
 					{
 						ImGui::Text("        >> The game must be in English/Spanish.");
-					}
+					}*/
 					ImGui::Checkbox("Use Improved Version | TEST", &Config::cfg.aim.cannon.improvedVersion);
 					if (Config::cfg.aim.cannon.improvedVersion)
 					{
@@ -580,7 +580,7 @@ HRESULT presentHook(IDXGISwapChain* swapChain, UINT syncInterval, UINT flags)
 				{
 					ImGui::Checkbox("Ship Info", &Config::cfg.game.shipInfo);
 					ImGui::Checkbox("Map Pins", &Config::cfg.game.mapPins);
-					ImGui::Checkbox("Players List", &Config::cfg.game.playerList);
+					ImGui::Checkbox("Players List | It bugs ESP/Menu render while is turned on.", &Config::cfg.game.playerList);
 					ImGui::Checkbox("Cook Tracker", &Config::cfg.game.cooking);
 					ImGui::Checkbox("Disable Idle Kick", &Config::cfg.game.noIdleKick);
 					ImGui::Checkbox("Walk Underwate ( F8 toggle | C key to fast dive ) (Experimental)", &Config::cfg.game.walkUnderwater);

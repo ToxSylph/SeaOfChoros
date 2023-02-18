@@ -380,15 +380,13 @@ void render(ImDrawList* drawList)
 		{
 			if (cfg->aim.cannon.enable && attachObject && attachObject->isCannon())
 			{
-				auto cannonObj = reinterpret_cast<ACannon*>(attachObject);
-				auto loaded_item = reinterpret_cast<ACannonLoadedItemInfo*>(attachObject);
-
-				if (loaded_item->LoadedItemInfo)
+				/*auto itemInfo = reinterpret_cast<ACannon*>(attachObject)->LoadedItemInfo;
+				if (itemInfo)
 				{
-					std::wstring loaded_name = loaded_item->LoadedItemInfo->Desc->Title->wide();
+					std::wstring loaded_name = itemInfo->Desc->Title->wide();
 					char bufff[0x64];
 					ZeroMemory(bufff, sizeof(bufff));
-					sprintf(bufff, "%ws", loaded_name.c_str());
+					sprintf_s(bufff, sizeof(bufff), "%ws", loaded_name.c_str());
 					ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 20, ImVec2(1656.f, 225.f), ImColor(255, 255, 255, 255), bufff, 0, 0.0f, 0);
 
 					if (cfg->aim.cannon.autoDetect)
@@ -403,7 +401,7 @@ void render(ImDrawList* drawList)
 							cfg->aim.cannon.deckshots = false;
 						}
 					}
-				}
+				}*/
 
 				error_code = 801;
 				if (GetAsyncKeyState(VK_F1) & 1)
@@ -475,7 +473,7 @@ void render(ImDrawList* drawList)
 				}
 
 				error_code = 9;
-				auto cannon = reinterpret_cast<ACannonSimple*>(attachObject);
+				auto cannon = reinterpret_cast<ACannon*>(attachObject);
 				float gravity_scale = cannon->ProjectileGravityScale;
 				int localsets = 0;
 
@@ -484,7 +482,7 @@ void render(ImDrawList* drawList)
 				{
 					float gravity = 981.f * gravity_scale;
 					float launchspeed = cannon->ProjectileSpeed;
-					FRotator angle = { cannon->ServerPitch, cannon->ServerYaw, 0.f };
+					FRotator angle = { cannon->ServerPitch, cannon->ServerYaw, 0.f }; // Not replicated anymore / Bad offset
 					FRotator comp_angle = attachObject->K2_GetActorRotation();
 					angle += comp_angle;
 					FVector vForward = UKismetMathLibrary::Conv_RotatorToVector(angle);

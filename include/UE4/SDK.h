@@ -466,7 +466,7 @@ struct AActor : UObject {
 // Size: 0x440 (Inherited: 0x3c8)
 struct APawn : AActor {
 	char pad[0x20];
-	struct APlayerState* PlayerState; // 0x3e0(0x08)
+	struct APlayerState* PlayerState; // 0x3e8(0x08)
 	char pad2[0x50];
 };
 
@@ -751,7 +751,7 @@ struct UItemDescEx : UObject {
 
 struct AItemInfo {
 	char pad[0x440];
-	UItemDesc* Desc; // 0x440(0x08)
+	struct UItemDesc* Desc; // 0x440(0x08)
 };
 
 // Class Engine.Character
@@ -1103,27 +1103,89 @@ struct ACannonLoadedItemInfo
 	struct AItemInfo* LoadedItemInfo; // 0x768(0x08)
 };
 
-struct ACannonSimple {
-	char pad_0[0x5b4];
-	float ProjectileSpeed; // 0x5b4(0x04)
-	float ProjectileGravityScale; // 0x5b8(0x04)
-	struct FFloatRange PitchRange; // 0x5bc(0x10)
-	struct FFloatRange YawRange; // 0x5cc(0x10)
-	char pad_1[0x1d4];
-	float ServerPitch; // 0x7b0(0x04)
-	float ServerYaw; // 0x7b4(0x04)
-};
 // Class Athena.Cannon
-// Size: 0xcc0 (Inherited: 0x510)
-struct ACannon {
-	char pad_0[0x5b4];
-	float ProjectileSpeed; // 0x5b4(0x04)
-	float ProjectileGravityScale; // 0x5b8(0x04)
-	struct FFloatRange PitchRange; // 0x5bc(0x10)
-	struct FFloatRange YawRange; // 0x5cc(0x10)
-	char pad_1[0x1d4];
-	float ServerPitch; // 0x7b0(0x04)
-	float ServerYaw; // 0x7b4(0x04)
+// Size: 0xce8 (Inherited: 0x510)
+struct ACannon  {
+	char pad_00[0x510];
+	char UnknownData_510[0x30]; // 0x510(0x30)
+	struct USkeletalMeshMemoryConstraintComponent* BaseMeshComponent; // 0x540(0x08)
+	struct UStaticMeshMemoryConstraintComponent* BarrelMeshComponent; // 0x548(0x08)
+	struct UStaticMeshComponent* FuseMeshComponent; // 0x550(0x08)
+	struct UReplicatedShipPartCustomizationComponent* CustomizationComponent; // 0x558(0x08)
+	struct ULoadableComponent* LoadableComponent; // 0x560(0x08)
+	struct ULoadingPointComponent* LoadingPointComponent; // 0x568(0x08)
+	struct UChildActorComponent* CannonBarrelInteractionComponent; // 0x570(0x08)
+	struct UFuseComponent* FuseComponent; // 0x578(0x08)
+	struct FName CameraSocket; // 0x580(0x08)
+	struct FName CameraInsideCannonSocket; // 0x588(0x08)
+	struct FName LaunchSocket; // 0x590(0x08)
+	struct FName TooltipSocket; // 0x598(0x08)
+	struct FName AudioAimRTPCName; // 0x5a0(0x08)
+	struct FName InsideCannonRTPCName; // 0x5a8(0x08)
+	struct UClass* ProjectileClass; // 0x5b0(0x08)
+	float TimePerFire; // 0x5b8(0x04)
+	float ProjectileSpeed; // 0x5bc(0x04)
+	float ProjectileGravityScale; // 0x5c0(0x04)
+	struct FFloatRange PitchRange; // 0x5c4(0x10)
+	struct FFloatRange YawRange; // 0x5d4(0x10)
+	float PitchSpeed; // 0x5e4(0x04)
+	float YawSpeed; // 0x5e8(0x04)
+	char UnknownData_5EC[0x4]; // 0x5ec(0x04)
+	struct UClass* CameraShake; // 0x5f0(0x08)
+	float ShakeInnerRadius; // 0x5f8(0x04)
+	float ShakeOuterRadius; // 0x5fc(0x04)
+	float CannonFiredAINoiseRange; // 0x600(0x04)
+	struct FName AINoiseTag; // 0x604(0x08)
+	char UnknownData_60C[0x4]; // 0x60c(0x04)
+	struct FText CannonDisabledToolTipText; // 0x610(0x38)
+	struct FText LoadingDisabledToolTipText; // 0x648(0x38)
+	struct UClass* UseCannonInputId; // 0x680(0x08)
+	struct UClass* StartLoadingCannonInputId; // 0x688(0x08)
+	struct UClass* StopLoadingCannonInputId; // 0x690(0x08)
+	float DefaultFOV; // 0x698(0x04)
+	float AimFOV; // 0x69c(0x04)
+	float IntoAimBlendSpeed; // 0x6a0(0x04)
+	float OutOfAimBlendSpeed; // 0x6a4(0x04)
+	struct UWwiseEvent* FireSfx; // 0x6a8(0x08)
+	struct UWwiseEvent* DryFireSfx; // 0x6b0(0x08)
+	struct UWwiseEvent* LoadingSfx_Play; // 0x6b8(0x08)
+	struct UWwiseEvent* LoadingSfx_Stop; // 0x6c0(0x08)
+	struct UWwiseEvent* UnloadingSfx_Play; // 0x6c8(0x08)
+	struct UWwiseEvent* UnloadingSfx_Stop; // 0x6d0(0x08)
+	struct UWwiseEvent* LoadedPlayerSfx; // 0x6d8(0x08)
+	struct UWwiseEvent* UnloadedPlayerSfx; // 0x6e0(0x08)
+	struct UWwiseEvent* FiredPlayerSfx; // 0x6e8(0x08)
+	struct UWwiseObjectPoolWrapper* SfxPool; // 0x6f0(0x08)
+	struct UWwiseEvent* StartPitchMovement; // 0x6f8(0x08)
+	struct UWwiseEvent* StopPitchMovement; // 0x700(0x08)
+	struct UWwiseEvent* StartYawMovement; // 0x708(0x08)
+	struct UWwiseEvent* StopYawMovement; // 0x710(0x08)
+	struct UWwiseEvent* StopMovementAtEnd; // 0x718(0x08)
+	struct UWwiseObjectPoolWrapper* SfxMovementPool; // 0x720(0x08)
+	struct UObject* FuseVfxFirstPerson; // 0x728(0x08)
+	struct UObject* FuseVfxThirdPerson; // 0x730(0x08)
+	struct UObject* MuzzleFlashVfxFirstPerson; // 0x738(0x08)
+	struct UObject* MuzzleFlashVfxThirdPerson; // 0x740(0x08)
+	struct FName FuseSocketName; // 0x748(0x08)
+	struct FName BarrelSocketName; // 0x750(0x08)
+	struct UClass* RadialCategoryFilter; // 0x758(0x08)
+	struct UClass* DefaultLoadedItemDesc; // 0x760(0x08)
+	float ClientRotationBlendTime; // 0x768(0x04)
+	char UnknownData_76C[0x4]; // 0x76c(0x04)
+	struct AItemInfo* LoadedItemInfo; // 0x770(0x08)
+	bool FiringDisabled; // 0x778(0x01)
+	char UnknownData_779[0x1f]; // 0x779(0x1f)
+	struct UMemoryConstrainedMeshInitializer* BaseMMCMeshInitializer; // 0x798(0x08)
+	struct UMemoryConstrainedMeshInitializer* BarrelMMCMeshInitializer; // 0x7a0(0x08)
+	struct UCannonDescAsset* DescToSetWhenSafe; // 0x7a8(0x08)
+	struct UCannonDescAsset* CurrentCannonDesc; // 0x7b0(0x08)
+	float ServerPitch; // 0x7b8(0x04)
+	float ServerYaw; // 0x7bc(0x04)
+	struct UParticleSystemComponent* LoadedItemVFXComp; // 0x7c0(0x08)
+	struct UStaticMesh* DefaultFuseMesh; // 0x7c8(0x08)
+	char UnknownData_7D0[0x510]; // 0x7d0(0x510)
+	char InteractionState; // 0xce0(0x01)
+	char UnknownData_CE1[0x7]; // 0xce1(0x07)
 
 	void HandlePitchInput(float Pitch)
 	{
@@ -1219,22 +1281,29 @@ struct FXMarksTheSpotMapMark {
 	char UnknownData_D[0x3]; // 0x0d(0x03)
 };
 
+// Class Athena.XMarksTheSpotMap
+// Size: 0x910 (Inherited: 0x7f0)
 struct AXMarksTheSpotMap
 {
-	char pad1[0x0808];
-	//struct FString                                     MapTexturePath;                                            // 0x0818(0x0010) (Net, ZeroConstructor, RepNotify, HasGetValueTypeHash)
-	//char pad2[0x80];
-	//TArray<struct FXMarksTheSpotMapMark>               Marks;                                                     // 0x08A8(0x0010) (Net, ZeroConstructor, RepNotify)
-	//char pad3[0x18];
-	//float                                              Rotation;                                                  // 0x08D0(0x0004) (Net, ZeroConstructor, IsPlainOldData, NoDestructor, HasGetValueTypeHash)
+	char pad1[0x07f0];
 
-
-	struct FString MapTexturePath; // 0x808(0x10)
-	char MapInventoryTexturePath[0x10]; // 0x818(0x10)
-	char UnknownData_828[0x70]; // 0x828(0x70)
-	struct TArray<struct FXMarksTheSpotMapMark> Marks; // 0x898(0x10)
-	char UnknownData_8A8[0x18]; // 0x8a8(0x18)
-	float Rotation; // 0x8c0(0x04)
+	int32_t CanvasWidth; // 0x7f0(0x04)
+	int32_t CanvasHeight; // 0x7f4(0x04)
+	struct UTexture* MarkTexture; // 0x7f8(0x08)
+	struct UTexture* AltMarkTexture; // 0x800(0x08)
+	struct UTexture* UndergroundMarkTexture; // 0x808(0x08)
+	struct UTexture* AltUndergroundMarkTexture; // 0x810(0x08)
+	float MarkWidthRatio; // 0x818(0x04)
+	float MarkHeightRatio; // 0x81c(0x04)
+	char MarkBlendMode; // 0x820(0x01)
+	char UnknownData_821[0x7]; // 0x821(0x07)
+	struct FString MapTexturePath; // 0x828(0x10)
+	char MapInventoryTexturePath[0x10]; // 0x838(0x10)
+	char UnknownData_848[0x70]; // 0x848(0x70)
+	struct TArray<struct FXMarksTheSpotMapMark> Marks; // 0x8b8(0x10)
+	char UnknownData_8C8[0x18]; // 0x8c8(0x18)
+	float Rotation; // 0x8e0(0x04)
+	char UnknownData_8E4[0x2c]; // 0x8e4(0x2c)
 };
 
 struct UWieldedItemComponent {
@@ -1359,9 +1428,9 @@ struct AAthenaCharacter : ACharacter {
 // Class Athena.AthenaPlayerCharacter
 // Size: 0x1cb0 (Inherited: 0xbf0)
 struct AAthenaPlayerCharacter : AAthenaCharacter {
-	char pad[0x198];
+	char pad[0x1A0];
 	struct UDrowningComponent* DrowningComponent; // 0xd48(0x08)
-	char pad2[0xF20];
+	char pad2[0xF28];
 
 	ACharacter* GetWieldedItem() {
 		if (!WieldedItemComponent) return nullptr;
@@ -2754,14 +2823,14 @@ struct UCharacterMovementComponent {
 };
 
 // Class Athena.OnlineAthenaPlayerController
-// Size: 0x1618 (Inherited: 0x1550)
+// Size: 0x1630 (Inherited: 0x1568)
 struct AOnlineAthenaPlayerController {
-	char pad_00[0x1550];
-	char UnknownData_1550[0x8]; // 0x1550(0x08)
-	char LogoutNoteCompletionIdent[0x8]; // 0x1558(0x08)
-	char UnknownData_1560[0x19]; // 0x1560(0x19)
-	bool IdleDisconnectEnabled; // 0x1579(0x01)
-	char UnknownData_157A[0x9e]; // 0x157a(0x9e)
+	char pad_00[0x1568];
+	char UnknownData_1568[0x8]; // 0x1568(0x08)
+	char LogoutNoteCompletionIdent[0x8]; // 0x1570(0x08)
+	char UnknownData_1578[0x19]; // 0x1578(0x19)
+	bool IdleDisconnectEnabled; // 0x1591(0x01)
+	char UnknownData_1592[0x9e]; // 0x1592(0x9e)
 };
 
 // Class Athena.Spyglass
