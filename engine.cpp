@@ -2700,7 +2700,7 @@ bool loadDevSettings()
 	cfg->aim.cannon.enable = true;
 	cfg->aim.cannon.fPitch = 100.f;
 	cfg->aim.cannon.fYaw = 100.f;
-	cfg->aim.cannon.drawPred = true;
+	cfg->aim.cannon.drawPred = false;
 	cfg->aim.cannon.instant = false;
 
 	cfg->game.enable = true;

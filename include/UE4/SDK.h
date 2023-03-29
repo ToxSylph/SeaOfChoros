@@ -1428,9 +1428,9 @@ struct AAthenaCharacter : ACharacter {
 // Class Athena.AthenaPlayerCharacter
 // Size: 0x1cb0 (Inherited: 0xbf0)
 struct AAthenaPlayerCharacter : AAthenaCharacter {
-	char pad[0x1A0];
-	struct UDrowningComponent* DrowningComponent; // 0xd48(0x08)
-	char pad2[0xF28];
+	char pad[0x1A8];
+	struct UDrowningComponent* DrowningComponent; // 0xd98(0x08)
+	char pad2[0xF10];
 
 	ACharacter* GetWieldedItem() {
 		if (!WieldedItemComponent) return nullptr;
